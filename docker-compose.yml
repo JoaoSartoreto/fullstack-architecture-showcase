@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # INFRAESTRUTURA COMPARTILHADA
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # Porta de comunicação interna (onde o código conecta)
+      - "15672:15672" # Porta do painel visual (acesse http://localhost:15672 no seu navegador)
+    networks:
+      - poc-network
+
+  # ==========================================
+  # SERVIÇO 1: CORE API (NESTJS)
+  # ==========================================
+  postgres-core:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user_core
+      POSTGRES_PASSWORD: password_core
+      POSTGRES_DB: core_db
+    ports:
+      - "5432:5432" # Porta padrão no seu Manjaro
+    networks:
+      - poc-network
+
+  core-api:
+    build:
+      context: ./core-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./core-api:/app
+    command: sh -c "npm install && npm run start:dev"
+    depends_on:
+      - postgres-core
+      - rabbitmq
+    networks:
+      - poc-network
+
+  # ==========================================
+  # SERVIÇO 2: LOG SERVICE (GO)
+  # ==========================================
+  postgres-log:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user_log
+      POSTGRES_PASSWORD: password_log
+      POSTGRES_DB: log_db
+    ports:
+      - "5433:5432" # Truque: Mapeia a porta 5433 da sua máquina para a 5432 deste contêiner
+    networks:
+      - poc-network
+
+  log-service:
+    build:
+      context: ./log-service-go
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-log
+      - rabbitmq
+    networks:
+      - poc-network
+
+# ==========================================
+# REDE VIRTUAL
+# ==========================================
+networks:
+  poc-network:
+    driver: bridge
