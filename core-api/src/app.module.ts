@@ -8,6 +8,7 @@ import { validationProvider } from './common/providers/validation.provider';
 import { AuthModule } from './auth/auth.module';
 import { globalSerializerInterceptorProvider } from './common/providers/serializer.provider';
 import { ProductsModule } from './products/products.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ProductsModule } from './products/products.module';
     UsersModule,
     AuthModule,
     ProductsModule,
+    OrdersModule,
   ],
   providers: [
     AppService,

@@ -4,7 +4,6 @@ import { CatalogItem } from '../entities/catalog-item.entity';
 import { PhysicalGoods } from '../entities/physical-goods.entity';
 import { Service } from '../entities/service.entity';
 import { CreateCatalogItemDto } from '../dto/create-catalog-item.dto';
-import { UpdateCatalogItemDto } from '../dto/update-catalog-item.dto';
 import { ItemType } from '../enums/item-type.enum';
 
 export const CatalogItemCreators: Record<string, (manager: EntityManager, dto: CreateCatalogItemDto) => CatalogItem> = {
@@ -20,17 +19,4 @@ export const CatalogItemCreators: Record<string, (manager: EntityManager, dto: C
         price: dto.price,
         estimatedDurationHours: dto.estimatedDurationHours,
     }),
-};
-
-export const CatalogUpdateValidators: Record<string, (dto: UpdateCatalogItemDto) => void> = {
-    [ItemType.PHYSICAL_GOODS]: (dto) => {
-        if ('estimatedDurationHours' in dto) {
-            throw new BadRequestException('Cannot assign estimated duration hours to physical goods');
-        }
-    },
-    [ItemType.SERVICE]: (dto) => {
-        if ('stockQuantity' in dto) {
-            throw new BadRequestException('Cannot assign stock quantity to a service');
-        }
-    },
 };

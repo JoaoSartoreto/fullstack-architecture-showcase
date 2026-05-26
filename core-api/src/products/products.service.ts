@@ -1,13 +1,13 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { CatalogItem } from './entities/catalog-item.entity';
-import { PhysicalGoods } from './entities/physical-goods.entity';
-import { Service } from './entities/service.entity';
 import { CreateCatalogItemDto } from './dto/create-catalog-item.dto';
 import { ItemType } from './enums/item-type.enum';
 import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
-import { CatalogItemCreators, CatalogUpdateValidators } from './factories/catalog.factory';
+import { CatalogItemCreators } from './factories/catalog.factory';
+import { CatalogValidationUtil } from './utils/catalog-validation.util';
+import { PhysicalGoods } from './entities/physical-goods.entity';
 
 @Injectable()
 export class ProductsService {
@@ -48,16 +48,34 @@ export class ProductsService {
   async update(id: string, dto: UpdateCatalogItemDto): Promise<CatalogItem> {
     const item = await this.catalogRepository.findOne({ where: { id } });
 
-    if (!item)
+    if (!item) {
       throw new NotFoundException(`Catalog item with ID ${id} not found`);
-
-    // Dynamic validation based on the entity's type
-    const validateLogic = CatalogUpdateValidators[item.type];
-    if (validateLogic) {
-      validateLogic(dto);
     }
 
-    Object.assign(item, dto);
-    return this.catalogRepository.save(item);
+    CatalogValidationUtil.validateUpdateLogic(item.type, dto);
+
+    // Cleaner object merging
+    return this.catalogRepository.save({ ...item, ...dto });
+  }
+
+  async decrementStock(manager: EntityManager, productId: string, quantity: number): Promise<void> {
+    const product = await manager.findOne(CatalogItem, { where: { id: productId } });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    if (product.type === ItemType.PHYSICAL_GOODS) {
+      const physicalGood = product as PhysicalGoods;
+      
+      CatalogValidationUtil.validateStockAvailability(
+        physicalGood.stockQuantity, 
+        quantity, 
+        physicalGood.name
+      );
+
+      physicalGood.stockQuantity -= quantity;
+      await manager.save(physicalGood);
+    }
   }
 }
