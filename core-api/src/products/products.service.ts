@@ -67,15 +67,21 @@ export class ProductsService {
 
     if (product.type === ItemType.PHYSICAL_GOODS) {
       const physicalGood = product as PhysicalGoods;
-      
+
       CatalogValidationUtil.validateStockAvailability(
-        physicalGood.stockQuantity, 
-        quantity, 
+        physicalGood.stockQuantity,
+        quantity,
         physicalGood.name
       );
 
       physicalGood.stockQuantity -= quantity;
       await manager.save(physicalGood);
     }
+  }
+
+  async existsByName(name: string): Promise<boolean> {
+    return this.catalogRepository.exist({
+      where: { name }
+    });
   }
 }

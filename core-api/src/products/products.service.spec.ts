@@ -23,6 +23,7 @@ describe('ProductsService', () => {
     save: jest.fn(),
     findOne: jest.fn(),
     find: jest.fn(),
+    exist: jest.fn(),
     createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
   };
 
@@ -132,6 +133,38 @@ describe('ProductsService', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
 
       expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('existsByName', () => {
+    it('should return true if an item with the exact name already exists', async () => {
+      // Arrange
+      const itemName = 'Enterprise Server Rack Rackmount 42U';
+      jest.spyOn(repository, 'exist').mockResolvedValue(true);
+
+      // Act
+      const result = await service.existsByName(itemName);
+
+      // Assert
+      expect(repository.exist).toHaveBeenCalledWith({
+        where: { name: itemName },
+      });
+      expect(result).toBe(true);
+    });
+
+    it('should return false if the item does not exist', async () => {
+      // Arrange
+      const itemName = 'Ghost Product';
+      jest.spyOn(repository, 'exist').mockResolvedValue(false);
+
+      // Act
+      const result = await service.existsByName(itemName);
+
+      // Assert
+      expect(repository.exist).toHaveBeenCalledWith({
+        where: { name: itemName },
+      });
+      expect(result).toBe(false);
     });
   });
 });
