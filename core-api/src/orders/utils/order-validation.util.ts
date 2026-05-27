@@ -1,8 +1,9 @@
 // src/orders/utils/order-validation.util.ts
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrderEntity } from '../entities/order.entity';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
 import { OrderStatus } from '../enums/order-status.enum';
+import { Role } from '../../common/enums/role.enum';
 
 export const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     [OrderStatus.DRAFT]: [OrderStatus.PENDING],
@@ -64,6 +65,12 @@ export class OrderValidationUtil {
 
         if (order.status !== OrderStatus.DRAFT) {
             throw new BadRequestException(`Only DRAFT orders (shopping carts) can be modified by the customer.`);
+        }
+    }
+
+    static validateOrderAccess(order: OrderEntity, userId: string, userRole: Role): void {
+        if (userRole === Role.CUSTOMER && order.userId !== userId) {
+            throw new ForbiddenException('You do not have permission to access this order.');
         }
     }
 }

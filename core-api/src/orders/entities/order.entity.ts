@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { UserEntity } from '../../users/entities/user.entity';
 import { OrderStatus } from '../enums/order-status.enum';
 import { OrderItemEntity } from './order-item.entity';
+import { OrderMessageEntity } from './order-message.entity';
 
 @Entity('orders')
 export class OrderEntity {
@@ -29,4 +30,7 @@ export class OrderEntity {
 
   @OneToMany(() => OrderItemEntity, (item) => item.order)
   items: OrderItemEntity[];
+
+  @OneToMany(() => OrderMessageEntity, (message) => message.order)
+  messages: OrderMessageEntity[];
 }

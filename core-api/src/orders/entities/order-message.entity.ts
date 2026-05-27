@@ -1,3 +1,4 @@
+// src/orders/entities/order-message.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { OrderEntity } from './order.entity';
 import { UserEntity } from '../../users/entities/user.entity';
@@ -7,24 +8,22 @@ export class OrderMessageEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ name: 'order_id' })
+    @Column({ name: 'order_id', type: 'uuid' })
     orderId: string;
 
-    // Relationship back to the main Order envelope
-    @ManyToOne(() => OrderEntity, { onDelete: 'CASCADE' })
+    @ManyToOne(() => OrderEntity, (order) => order.messages, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'order_id' })
     order: OrderEntity;
 
-    @Column({ name: 'sender_id' })
+    @Column({ name: 'sender_id', type: 'uuid' })
     senderId: string;
 
-    // Relationship to the user who sent the message (Customer or Staff)
     @ManyToOne(() => UserEntity)
     @JoinColumn({ name: 'sender_id' })
     sender: UserEntity;
 
     @Column({ type: 'text' })
-    message: string;
+    content: string;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

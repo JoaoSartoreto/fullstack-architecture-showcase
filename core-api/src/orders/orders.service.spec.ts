@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OrderEntity } from './entities/order.entity';
 import { OrderStatus } from './enums/order-status.enum';
 import { OrderItemEntity } from './entities/order-item.entity';
 import { ProductsService } from './../products/products.service';
+import { OrderMessageEntity } from './entities/order-message.entity';
+import { Role } from '../common/enums/role.enum';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -39,6 +41,12 @@ describe('OrdersService', () => {
     decrementStock: jest.fn(),
   };
 
+  const mockMessageRepository = {
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,6 +54,7 @@ describe('OrdersService', () => {
         // Instruct NestJS to use our double whenever the service requests a DataSource
         { provide: DataSource, useValue: mockDataSource },
         { provide: getRepositoryToken(OrderEntity), useValue: mockOrderRepository },
+        { provide: getRepositoryToken(OrderMessageEntity), useValue: mockMessageRepository },
         { provide: ProductsService, useValue: mockProductsService },
       ],
     }).compile();
@@ -251,19 +260,102 @@ describe('OrdersService', () => {
     });
   });
 
-  describe('findAll', () => {
-    it('should return all orders except those in DRAFT status', async () => {
-      const mockOrders = [{ id: 'order-1', status: OrderStatus.PENDING }];
-      mockOrderRepository.find.mockResolvedValue(mockOrders);
+  describe('findAllForStaff', () => {
+    it('should return all orders except DRAFTs for staff view', async () => {
+      mockOrderRepository.find.mockResolvedValue([]);
+      await service.findAllForStaff();
 
-      const result = await service.findAll();
+      expect(mockOrderRepository.find).toHaveBeenCalledWith({
+        where: { status: expect.any(Object) }, // TypeORM Not() operator
+        relations: { user: true },
+        order: { createdAt: 'DESC' },
+      });
+    });
+  });
 
-      expect(mockOrderRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { status: expect.any(Object) }, // Represents the TypeORM Not() operator
-        })
-      );
-      expect(result).toEqual(mockOrders);
+  describe('findAllForCustomer', () => {
+    it('should return only the orders belonging to the logged customer', async () => {
+      mockOrderRepository.find.mockResolvedValue([]);
+      await service.findAllForCustomer('user-1');
+
+      expect(mockOrderRepository.find).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+        order: { createdAt: 'DESC' },
+      });
+    });
+  });
+
+  describe('findOneDetails', () => {
+    it('should return detailed order with items if user has access', async () => {
+      const mockOrder = { id: 'order-1', userId: 'user-1' };
+      mockOrderRepository.findOne.mockResolvedValueOnce(mockOrder);
+
+      const result = await service.findOneDetails('order-1', 'user-1', Role.CUSTOMER);
+
+      expect(result).toEqual(mockOrder);
+      expect(mockOrderRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'order-1' },
+        relations: { user: true, items: { product: true } },
+      });
+    });
+
+    it('should throw ForbiddenException if a CUSTOMER tries to view another customers order', async () => {
+      const mockOrder = { id: 'order-1', userId: 'user-1' }; // Belongs to user-1
+      mockOrderRepository.findOne.mockResolvedValueOnce(mockOrder);
+
+      // user-2 tries to access it
+      await expect(
+        service.findOneDetails('order-1', 'user-2', Role.CUSTOMER)
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('findOrderMessages', () => {
+    it('should return chat history in DESC order for authorized users', async () => {
+      const mockOrder = { id: 'order-1', userId: 'user-1' };
+      mockOrderRepository.findOne.mockResolvedValueOnce(mockOrder);
+      mockMessageRepository.find.mockResolvedValueOnce([]);
+
+      await service.findOrderMessages('order-1', 'user-1', Role.CUSTOMER);
+
+      expect(mockMessageRepository.find).toHaveBeenCalledWith({
+        where: { orderId: 'order-1' },
+        relations: { sender: true },
+        order: { createdAt: 'DESC' }, // Testing your UX decision!
+      });
+    });
+  });
+
+  describe('addMessage', () => {
+    const mockDto = { content: 'Hello, please lower the price.' };
+
+    it('should save a new message if the order is IN_NEGOTIATION', async () => {
+      const mockOrder = { id: 'order-1', userId: 'user-1', status: OrderStatus.IN_NEGOTIATION };
+      const mockCreatedMessage = { id: 'msg-1', content: mockDto.content };
+
+      mockOrderRepository.findOne.mockResolvedValueOnce(mockOrder);
+      mockMessageRepository.create.mockReturnValueOnce(mockCreatedMessage);
+      mockMessageRepository.save.mockResolvedValueOnce(mockCreatedMessage);
+
+      const result = await service.addMessage('order-1', 'user-1', Role.CUSTOMER, mockDto);
+
+      expect(result).toEqual(mockCreatedMessage);
+      expect(mockMessageRepository.create).toHaveBeenCalledWith({
+        orderId: 'order-1',
+        senderId: 'user-1',
+        content: 'Hello, please lower the price.',
+      });
+    });
+
+    it('should throw BadRequestException if order is not IN_NEGOTIATION', async () => {
+      const mockPendingOrder = { id: 'order-1', userId: 'user-1', status: OrderStatus.PENDING };
+      mockOrderRepository.findOne.mockResolvedValueOnce(mockPendingOrder);
+
+      await expect(
+        service.addMessage('order-1', 'user-1', Role.CUSTOMER, mockDto)
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockMessageRepository.save).not.toHaveBeenCalled();
     });
   });
 });

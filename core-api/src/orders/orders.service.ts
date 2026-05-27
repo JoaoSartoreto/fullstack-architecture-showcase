@@ -3,13 +3,16 @@ import { DataSource, EntityManager, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrderEntity } from './entities/order.entity';
 import { OrderItemEntity } from './entities/order-item.entity';
-import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 import { CatalogItem } from '../products/entities/catalog-item.entity';
 import { OrderStatus } from './enums/order-status.enum';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderValidationUtil } from './utils/order-validation.util';
 import { ProductsService } from '../products/products.service';
 import { OrderItemProcessor } from '../products/utils/order-item-processor.util';
+import { OrderMessageEntity } from './entities/order-message.entity';
+import { Role } from '../common/enums/role.enum';
+import { CreateOrderMessageDto } from './dto/create-order-message.dto';
 
 @Injectable()
 export class OrdersService {
@@ -17,6 +20,8 @@ export class OrdersService {
         private readonly dataSource: DataSource,
         @InjectRepository(OrderEntity)
         private readonly orderRepository: Repository<OrderEntity>,
+        @InjectRepository(OrderMessageEntity) // <-- NOVO
+        private readonly messageRepository: Repository<OrderMessageEntity>,
         private readonly productsService: ProductsService
     ) { }
 
@@ -102,17 +107,78 @@ export class OrdersService {
         await this.dataSource.manager.delete(OrderItemEntity, { id: itemId });
     }
 
-    async findAll(): Promise<OrderEntity[]> {
+    async findAllForStaff(): Promise<OrderEntity[]> {
         return this.orderRepository.find({
             where: {
-                status: Not(OrderStatus.DRAFT),
+                status: Not(OrderStatus.DRAFT), // Staff doesn't see private shopping carts
             },
             relations: {
                 user: true,
-                items: { product: true },
             },
             order: { createdAt: 'DESC' },
         });
+    }
+
+    async findAllForCustomer(userId: string): Promise<OrderEntity[]> {
+        return this.orderRepository.find({
+            where: { userId },
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    async findOneDetails(orderId: string, userId: string, userRole: Role): Promise<OrderEntity> {
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+            relations: {
+                user: true,
+                items: { product: true }, // Deeply fetches frozen prices and current product metadata
+            },
+        });
+
+        OrderValidationUtil.validateOrderExists(order, orderId);
+        OrderValidationUtil.validateOrderAccess(order, userId, userRole);
+
+        return order;
+    }
+
+    async findOrderMessages(orderId: string, userId: string, userRole: Role): Promise<OrderMessageEntity[]> {
+        const order = await this.orderRepository.findOne({ where: { id: orderId } });
+
+        OrderValidationUtil.validateOrderExists(order, orderId);
+        OrderValidationUtil.validateOrderAccess(order, userId, userRole);
+
+        return this.messageRepository.find({
+            where: { orderId },
+            relations: { sender: true }, 
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    async addMessage(
+        orderId: string,
+        userId: string,
+        userRole: Role,
+        createMessageDto: CreateOrderMessageDto
+    ): Promise<OrderMessageEntity> {
+        const order = await this.orderRepository.findOne({ where: { id: orderId } });
+
+        OrderValidationUtil.validateOrderExists(order, orderId);
+        OrderValidationUtil.validateOrderAccess(order, userId, userRole);
+
+        // Business rule: Messages can only be exchanged during negotiation
+        if (order.status !== OrderStatus.IN_NEGOTIATION) {
+            throw new BadRequestException(
+                `Messages can only be sent when the order is in IN_NEGOTIATION status.`
+            );
+        }
+
+        const message = this.messageRepository.create({
+            orderId: order.id,
+            senderId: userId,
+            content: createMessageDto.content,
+        });
+
+        return this.messageRepository.save(message);
     }
 
     /* --- Private Processing Helpers --- */
