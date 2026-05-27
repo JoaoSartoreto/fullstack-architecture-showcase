@@ -9,7 +9,7 @@ import { OrderStatus } from './enums/order-status.enum';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderValidationUtil } from './utils/order-validation.util';
 import { ProductsService } from '../products/products.service';
-import { OrderItemProcessor } from '../products/utils/order-item-processor.util';
+import { OrderItemProcessor } from './utils/order-item-processor.util';
 import { OrderMessageEntity } from './entities/order-message.entity';
 import { Role } from '../common/enums/role.enum';
 import { CreateOrderMessageDto } from './dto/create-order-message.dto';
