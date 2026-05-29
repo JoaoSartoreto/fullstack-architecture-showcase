@@ -2,18 +2,18 @@ version: '3.8'
 
 services:
   # ==========================================
-  # INFRAESTRUTURA COMPARTILHADA
+  # SHARED INFRASTRUCTURE
   # ==========================================
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
-      - "5672:5672"   # Porta de comunicação interna (onde o código conecta)
-      - "15672:15672" # Porta do painel visual (acesse http://localhost:15672 no seu navegador)
+      - "5672:5672"   # Internal communication port
+      - "15672:15672" # Management UI port (access via http://localhost:15672)
     networks:
       - poc-network
 
   # ==========================================
-  # SERVIÇO 1: CORE API (NESTJS)
+  # SERVICE 1: CORE API (NESTJS)
   # ==========================================
   postgres-core:
     image: postgres:15-alpine
@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: password_core
       POSTGRES_DB: core_db
     ports:
-      - "5432:5432" # Porta padrão no seu Manjaro
+      - "5432:5432"
     networks:
       - poc-network
 
@@ -41,7 +41,7 @@ services:
       - poc-network
 
   # ==========================================
-  # SERVIÇO 2: LOG SERVICE (GO)
+  # SERVICE 2: LOG SERVICE (GO)
   # ==========================================
   postgres-log:
     image: postgres:15-alpine
@@ -50,7 +50,7 @@ services:
       POSTGRES_PASSWORD: password_log
       POSTGRES_DB: log_db
     ports:
-      - "5433:5432" # Truque: Mapeia a porta 5433 da sua máquina para a 5432 deste contêiner
+      - "5433:5432" # Maps host port 5433 to container port 5432 to avoid conflicts
     networks:
       - poc-network
 
@@ -66,7 +66,7 @@ services:
       - poc-network
 
 # ==========================================
-# REDE VIRTUAL
+# VIRTUAL NETWORK
 # ==========================================
 networks:
   poc-network:
