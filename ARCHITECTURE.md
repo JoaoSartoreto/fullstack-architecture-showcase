@@ -11,21 +11,28 @@ A proof-of-concept enterprise system simulating a B2B/B2G operational flow. The 
 
 ---
 
-## ✅ Current State (Completed Domains)
+## ✅ Current State (Completed Domains & Infrastructure)
 
-### 1. Users & Authentication
+### 1. Infrastructure & Living Documentation
+- **Idempotent Database Seeding:** Automated, environment-protected initialization scripts (`SeedModule`) that populate core users and a polymorphic catalog upon first boot, using highly optimized $O(1)$ SQL `EXISTS` lookups to prevent hydration overhead.
+- **Living Documentation (OpenAPI/Swagger):** Fully integrated Swagger UI accessible at `/api-docs`.
+  - Implemented via Nest CLI Plugin for automated static analysis of DTOs.
+  - Utilized **Compound Decorators** to encapsulate verbose documentation rules, keeping Controllers strictly focused on routing logic.
+  - Applied **Mapped Types** (`OmitType`, `PickType`) to ensure strict fidelity between Runtime TypeORM relations and Static Swagger JSON examples, preventing data leaks (e.g., hiding password hashes and stripping unrequested relations).
+
+### 2. Users & Authentication
 - Implemented global `ValidationPipe` at the module level for strict DTO sanitization (Whitelist enforcement).
 - Custom `@CurrentUser()` decorator mapping directly to JWT payload, eliminating IDOR vulnerabilities.
 - Extensible RBAC implementation using Bitwise/Hierarchical logic (`CUSTOMER` -> `STAFF` -> `ADMIN`).
 - Role promotion mechanism strictly confined to `ADMIN` authorization.
 
-### 2. Catalog Domain (Inventory)
+### 3. Catalog Domain (Inventory)
 - Implemented **Single Table Inheritance (Polymorphism)** (`CatalogItem` as abstract base).
 - Supported types: `PHYSICAL_GOODS` (enforces strict stock control) and `SERVICE` (enforces estimated duration without inventory tracking).
 - Factory Pattern implementation for semantic entity creation.
 - Extracted validation logic to dedicated Utility classes to respect the Single Responsibility Principle.
 
-### 3. Orders Domain (The Core Engine)
+### 4. Orders Domain (The Core Engine)
 - **State Machine:** Governs the immutable lifecycle of an order: `DRAFT` -> `PENDING` -> `IN_NEGOTIATION` -> `APPROVED` / `REJECTED` -> `DELIVERED`.
 - **Shopping Cart (`DRAFT`):** Customers have full CRUD control over their draft items.
 - **Checkout Process:** Freezes product prices chronologically to guarantee historical financial immutability regardless of future catalog changes.
@@ -34,13 +41,14 @@ A proof-of-concept enterprise system simulating a B2B/B2G operational flow. The 
 - **Bidirectional Communication:** Implemented `OrderMessageEntity` to act as a timeline/chat for negotiation between Staff and Customers.
 - **Read Decoupling:** Implemented anti-over-fetching architecture by splitting read endpoints: Lightweight tables for listing, nested payloads for details, and isolated fetches for chat history.
 
-### 4. Testing Culture
-- Comprehensive Unit Testing suite (Jest) covering business logic, domain boundaries, state transitions, and exception handling.
+### 5. Testing Culture
+- Comprehensive Unit Testing suite (Jest) covering business logic, domain boundaries, state transitions, exception handling, and Seeding Idempotency.
 - Mocking structures strictly respect Transaction Managers (`EntityManager`) to validate ACID compliance.
 
 ---
 
 ## 🗺️ Endpoints Map
+> **Note:** For interactive request/response schemas and JWT authentication, run the server and visit `/api-docs`.
 
 ### Auth & Users
 | Method | Endpoint | Role | Objective |
@@ -65,7 +73,7 @@ A proof-of-concept enterprise system simulating a B2B/B2G operational flow. The 
 | **POST** | `/orders/cart` | `CUSTOMER` | Creates a cart or pushes items into an existing DRAFT. |
 | **DELETE**| `/orders/cart/items/:itemId` | `CUSTOMER` | Removes a specific item from the active cart. |
 | **PATCH** | `/orders/:id/checkout` | `CUSTOMER` | Submits the draft, freezing prices and advancing state. |
-| **PATCH** | `/orders/:id/items` | `STAFF` | Triggers the Diffing Algorithm to adjust order lines during negotiation. |
+| **PATCH** | `/orders/:id/items` | `STAFF` | Triggers the Diffing Algorithm to adjust order lines. |
 | **PATCH** | `/orders/:id/status` | `STAFF` | Advances the machine state. Triggers inventory deduction if APPROVED. |
 | **POST** | `/orders/:id/messages` | `BOTH` | Appends a text node to the negotiation timeline. |
 | **GET** | `/orders` | `STAFF` | Lightweight fetch. Lists all active system orders. |
@@ -77,11 +85,7 @@ A proof-of-concept enterprise system simulating a B2B/B2G operational flow. The 
 
 ## 🚀 Roadmap (What is missing)
 
-### Phase 4: Infrastructure Polish (Current)
-- [ ] **Database Seeding:** Build initialization scripts/endpoints to populate the database with an administrative user and a base catalog upon first boot.
-- [ ] **Living Documentation:** Integrate `@nestjs/swagger` to auto-generate interactive API definitions, request/response schemas, and JWT testing capabilities.
-
-### Phase 5: Distributed Auditing (The Microservices Layer)
+### Phase 5: Distributed Auditing (The Microservices Layer) - **[CURRENT]**
 - [ ] **Telemetry Interceptor:** Global NestJS interceptor to capture HTTP metadata and failures.
 - [ ] **Transactional Outbox Pattern:** Implement the `outbox` table in the Core API to guarantee at-least-once delivery of domain events without distributed transaction locking.
 - [ ] **NestJS Relay Worker:** Background cron job to poll the `outbox` table and publish payloads to RabbitMQ.

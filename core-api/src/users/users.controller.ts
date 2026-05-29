@@ -7,7 +7,9 @@ import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { ApiDocsCreateUser, ApiDocsFindAll, ApiDocsGetProfile, ApiDocsUpdateRole, ApiDocsUsersController } from './users.docs';
 
+@ApiDocsUsersController()
 @Controller('users')
 export class UsersController {
 
@@ -15,17 +17,20 @@ export class UsersController {
 
     @Public()
     @Post()
+    @ApiDocsCreateUser()
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.create(createUserDto.email, createUserDto.password);
     }
 
     @Get('me')
+    @ApiDocsGetProfile()
     getProfile(@CurrentUser() user: UserEntity) {
         return user;
     }
 
     @Patch(':id/role')
     @Roles(Role.ADMIN)
+    @ApiDocsUpdateRole()
     async updateRole(
         @Param('id', ParseUUIDPipe) id: string,
         @Body() updateRoleDto: UpdateRoleDto,
@@ -35,6 +40,7 @@ export class UsersController {
 
     @Get()
     @Roles(Role.STAFF)
+    @ApiDocsFindAll()
     findAll() {
         return this.usersService.findAll();
     }

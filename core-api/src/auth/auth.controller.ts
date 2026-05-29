@@ -2,7 +2,9 @@ import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus } f
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Public } from '../common/decorators/public.decorator';
+import { ApiDocsAuthController, ApiDocsLogin } from './auth.docs';
 
+@ApiDocsAuthController()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
@@ -10,6 +12,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiDocsLogin()
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
   }
