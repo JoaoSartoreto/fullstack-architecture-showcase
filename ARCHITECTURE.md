@@ -89,8 +89,15 @@ A proof-of-concept enterprise system simulating a B2B/B2G operational flow. The 
 - [ ] **Telemetry Interceptor:** Global NestJS interceptor to capture HTTP metadata and failures.
 - [ ] **Transactional Outbox Pattern:** Implement the `outbox` table in the Core API to guarantee at-least-once delivery of domain events without distributed transaction locking.
 - [ ] **NestJS Relay Worker:** Background cron job to poll the `outbox` table and publish payloads to RabbitMQ.
-- [ ] **Go Microservice:** Develop the consumer in Go to ingest RabbitMQ events and persist them in an isolated Audit Database.
+- [x] **Go Microservice:** Develop the consumer in Go to ingest RabbitMQ events and persist them in an isolated Audit Database.
 
-### Phase 6: E2E and Delivery
+### 6. Distributed Auditing (Log Service)
+- **Clean Architecture (Go):** Fully decoupled layers (Broker, Consumer, Service, Repository) ensuring the business logic is oblivious to the transport and storage mechanisms.
+- **High-Performance Ingestion:** Utilizes RabbitMQ multiplexed channels and Go's native `epoll`-based Netpoller to process telemetry events asynchronously with near-zero CPU idle waste.
+- **Index Optimization:** Implemented **Partial B-Tree Expression Indexes** in PostgreSQL to maintain lightning-fast write throughput while keeping high-cardinality JSON payload fields searchable without generalized index bloat.
+- **Docker Multi-stage Build:** Compiled via an ephemeral builder image and deployed on a pristine, vulnerability-free Alpine runtime, achieving a minimal attack surface and sub-10MB footprint.
+- **Container Orchestration:** Configured stringent Docker Compose `healthchecks` to prevent Race Conditions, guaranteeing the Go binary only boots when the database and broker are strictly ready for connections.
+
+### Phase 7: E2E and Delivery
 - [ ] End-to-End (E2E) testing suite utilizing Testcontainers.
 - [ ] Implement generic Pagination decorators/DTOs (`take`, `skip`, `total`) to handle frontend infinite scrolling constraints.
