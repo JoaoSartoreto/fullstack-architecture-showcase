@@ -42,14 +42,14 @@ cd fullstack-architecture-showcase
 **2. Start the ecosystem in detached mode:**
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 
 ```
 
 **3. Verify the logs (Optional):**
 
 ```bash
-docker-compose logs -f core-api
+docker compose logs -f core-api
 
 ```
 
@@ -71,8 +71,40 @@ Once the containers are up and running, you can access the services through the 
 To gracefully stop all containers and remove the default network, run:
 
 ```bash
-docker-compose down
+docker compose down
 
 ```
 
-To also wipe the database volumes (resetting all data), append the `-v` flag: `docker-compose down -v`.
+To also wipe the database volumes (resetting all data), append the `-v` flag: `docker compose down -v`.
+
+
+## 🧪 Running Tests
+
+### Core API (NestJS)
+To run the comprehensive Unit Testing suite (Jest) covering the business logic, domain boundaries, and state machines:
+```bash
+cd core-api
+npm install
+npm run test
+```
+
+### Log Service (Go) - Automated Unit Tests
+
+To run the isolated Unit Testing suite for the Audit Microservice's business logic layer:
+
+```bash
+cd log-service-go
+go test -v ./internal/service/...
+
+```
+
+### Log Service (Go) - Manual End-to-End (E2E) Simulation
+
+To verify the entire distributed ingestion pipeline (RabbitMQ -> Go Netpoller -> PostgreSQL) without relying on the NestJS Core API, make sure the infrastructure is running (`docker compose up`), and execute the standalone simulation client:
+
+```bash
+cd log-service-go
+go run cmd/tester/main.go
+```
+
+*Note: A successful execution will output a generated UUIDv7 Trace ID. You can then check the `audit_logs` table inside the `log_db` target database to confirm the payload was seamlessly persisted.*

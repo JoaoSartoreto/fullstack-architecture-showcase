@@ -7,10 +7,15 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
-      - "5672:5672"   # Internal communication port
-      - "15672:15672" # Management UI port (access via http://localhost:15672)
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - poc-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ==========================================
   # SERVICE 1: CORE API (NESTJS)
@@ -50,18 +55,35 @@ services:
       POSTGRES_PASSWORD: password_log
       POSTGRES_DB: log_db
     ports:
-      - "5433:5432" # Maps host port 5433 to container port 5432 to avoid conflicts
+      - "5433:5432"
     networks:
       - poc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_log -d log_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   log-service:
     build:
       context: ./log-service-go
     ports:
       - "8080:8080"
+    environment:
+      - DB_HOST=postgres-log
+      - DB_PORT=5432
+      - DB_USER=user_log
+      - DB_PASS=password_log
+      - DB_NAME=log_db
+      - RMQ_HOST=rabbitmq
+      - RMQ_PORT=5672
+      - RMQ_USER=guest
+      - RMQ_PASS=guest
     depends_on:
-      - postgres-log
-      - rabbitmq
+      postgres-log:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - poc-network
 
