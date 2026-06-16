@@ -1,12 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { OrderEntity } from './order.entity';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
+import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 
 @Entity('order_items')
-export class OrderItemEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
-
+export class OrderItemEntity extends AbstractBaseEntity{
     @Column({ name: 'order_id' })
     orderId: string;
 
@@ -29,7 +27,4 @@ export class OrderItemEntity {
     // Historical price protection: records the exact price at the time of purchase
     @Column({ name: 'price_at_purchase', type: 'decimal', precision: 10, scale: 2 })
     priceAtPurchase: number;
-
-    @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
 }

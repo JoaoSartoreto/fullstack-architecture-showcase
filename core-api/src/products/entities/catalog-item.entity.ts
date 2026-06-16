@@ -1,12 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, TableInheritance } from 'typeorm';
+import { Entity, Column, TableInheritance } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
+import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 
 @Entity('catalog_items')
 @TableInheritance({ column: { type: 'varchar', name: 'type' } })
-export class CatalogItem {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class CatalogItem extends AbstractBaseEntity {
   @Column()
   name: string;
 
@@ -18,12 +16,6 @@ export class CatalogItem {
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
 
   type: ItemType;
 }

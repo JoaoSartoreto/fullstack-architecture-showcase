@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { SeedService } from './seed.service';
 import { UsersService } from '../../../users/users.service';
 import { ProductsService } from '../../../products/products.service';
@@ -8,13 +9,10 @@ describe('SeedService', () => {
     let service: SeedService;
     let usersService: jest.Mocked<Partial<UsersService>>;
     let productsService: jest.Mocked<Partial<ProductsService>>;
-
-    // Store the original environment to restore it after tests
-    const originalEnv = process.env;
+    let configService: jest.Mocked<Partial<ConfigService>>;
 
     beforeEach(async () => {
         jest.clearAllMocks();
-        process.env = { ...originalEnv }; // Clone the environment for each test
 
         // Mocking the dependencies
         usersService = {
@@ -28,19 +26,20 @@ describe('SeedService', () => {
             create: jest.fn().mockResolvedValue({}),
         };
 
+        configService = {
+            get: jest.fn(),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 SeedService,
                 { provide: UsersService, useValue: usersService },
                 { provide: ProductsService, useValue: productsService },
+                { provide: ConfigService, useValue: configService },
             ],
         }).compile();
 
         service = module.get<SeedService>(SeedService);
-    });
-
-    afterAll(() => {
-        process.env = originalEnv; // Restore completely after all tests
     });
 
     it('should be defined', () => {
@@ -49,8 +48,8 @@ describe('SeedService', () => {
 
     describe('Environment Guard', () => {
         it('should NOT execute seeding if ENABLE_DB_SEED is not true', async () => {
-            // Arrange
-            process.env.ENABLE_DB_SEED = 'false';
+            // Arrange: Simulate the environment variable missing or false
+            (configService.get as jest.Mock).mockReturnValue('false');
 
             // Act
             await service.onApplicationBootstrap();
@@ -64,7 +63,7 @@ describe('SeedService', () => {
     describe('Execution and Idempotency', () => {
         beforeEach(() => {
             // Enable seeding for this block
-            process.env.ENABLE_DB_SEED = 'true';
+            (configService.get as jest.Mock).mockReturnValue('true');
         });
 
         it('should skip seeding for users and items that already exist (Idempotency)', async () => {

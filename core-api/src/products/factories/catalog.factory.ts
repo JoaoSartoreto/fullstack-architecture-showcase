@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { CatalogItem } from '../entities/catalog-item.entity';
 import { PhysicalGoods } from '../entities/physical-goods.entity';
