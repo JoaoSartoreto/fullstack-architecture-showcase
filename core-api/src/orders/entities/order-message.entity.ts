@@ -1,13 +1,10 @@
-// src/orders/entities/order-message.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { OrderEntity } from './order.entity';
 import { UserEntity } from '../../users/entities/user.entity';
+import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 
 @Entity('order_messages')
-export class OrderMessageEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
-
+export class OrderMessageEntity extends AbstractBaseEntity{
     @Column({ name: 'order_id', type: 'uuid' })
     orderId: string;
 
@@ -24,7 +21,4 @@ export class OrderMessageEntity {
 
     @Column({ type: 'text' })
     content: string;
-
-    @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
 }

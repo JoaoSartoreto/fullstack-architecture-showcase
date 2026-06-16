@@ -1,19 +1,10 @@
 import { Exclude } from 'class-transformer';
 import { Role } from '../../common/enums/role.enum';
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn
-} from 'typeorm';
+import { Entity, Column } from 'typeorm';
+import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 
 @Entity('users')
-export class UserEntity {
-
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class UserEntity extends AbstractBaseEntity {
   @Column({ unique: true })
   email: string;
 
@@ -23,10 +14,4 @@ export class UserEntity {
 
   @Column({ type: 'enum', enum: Role, default: Role.CUSTOMER })
   role: Role;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
 }

@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../../users/users.service';
 import { ProductsService } from '../../../products/products.service';
 import { Role } from '../../../common/enums/role.enum';
@@ -12,10 +13,12 @@ export class SeedService implements OnApplicationBootstrap {
     constructor(
         private readonly usersService: UsersService,
         private readonly productsService: ProductsService,
+        private readonly configService: ConfigService,
     ) { }
 
     async onApplicationBootstrap() {
-        if (process.env.ENABLE_DB_SEED !== 'true') return;
+        // Centralized environment access via ConfigService
+        if (this.configService.get<string>('ENABLE_DB_SEED') !== 'true') return;
 
         this.logger.log('🌱 Starting enterprise database seeding...');
         await this.seedUsers();
@@ -34,10 +37,10 @@ export class SeedService implements OnApplicationBootstrap {
             const exists = await this.usersService.findByEmail(email);
 
             if (!exists) {
-                // Aproveita a lógica de hashing já existente no serviço
+                // Leverages the existing hashing logic within the service
                 const newUser = await this.usersService.create(email, password);
 
-                // A regra de negócio padrão cria como CUSTOMER. Se for diferente, promovemos.
+                // The default business rule creates users as CUSTOMER. Promote if a different role is required.
                 if (role !== Role.CUSTOMER) {
                     await this.usersService.updateRole(newUser.id, role);
                 }
@@ -48,7 +51,7 @@ export class SeedService implements OnApplicationBootstrap {
     }
 
     private async seedCatalog() {
-        // Utilizando DTOs simulados com Type Assertion para adequação à Factory
+        // Using mocked DTOs with Type Assertion to match the Factory requirements
         const catalogToSeed = [
             {
                 type: ItemType.PHYSICAL_GOODS,
