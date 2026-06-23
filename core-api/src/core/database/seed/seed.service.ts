@@ -28,17 +28,32 @@ export class SeedService implements OnApplicationBootstrap {
 
     private async seedUsers() {
         const usersToSeed = [
-            { email: 'admin@teste.com', password: 'teste123', role: Role.ADMIN },
-            { email: 'staff@teste.com', password: 'teste123', role: Role.STAFF },
-            { email: 'custumer@teste.com', password: 'teste123', role: Role.CUSTOMER },
+            { 
+                fullName: 'Admin Test', 
+                email: 'admin@teste.com', 
+                password: 'teste123', 
+                role: Role.ADMIN 
+            },
+            { 
+                fullName: 'Staff Test',
+                email: 'staff@teste.com', 
+                password: 'teste123', 
+                role: Role.STAFF 
+            },
+            { 
+                fullName: 'Custumer Test',
+                email: 'custumer@teste.com', 
+                password: 'teste123', 
+                role: Role.CUSTOMER 
+            },
         ];
 
-        for (const { email, password, role } of usersToSeed) {
+        for (const { email, password, role, fullName } of usersToSeed) {
             const exists = await this.usersService.findByEmail(email);
 
             if (!exists) {
                 // Leverages the existing hashing logic within the service
-                const newUser = await this.usersService.create(email, password);
+                const newUser = await this.usersService.create({ email, password, fullName });
 
                 // The default business rule creates users as CUSTOMER. Promote if a different role is required.
                 if (role !== Role.CUSTOMER) {

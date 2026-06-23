@@ -47,3 +47,11 @@ export function ApiDocsFindAll() {
         ApiPaginatedResponse(UserResponseDto)
     );
 }
+
+export function ApiDocsUpdateUser() {
+    return applyDecorators(
+        ApiBearerAuth('JWT-auth'),
+        ApiOperation({ summary: 'Update current user profile data (e.g., password)' }),
+        ApiOkResponse({ description: 'Profile updated successfully.', type: UserResponseDto })
+    );
+}
