@@ -8,6 +8,8 @@ import { Role } from './enums/role.enum';
 import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 import { Order } from '../common/pagination/enums/order.enum';
 import { UserPageOptionsDto } from './dto/user-page-options.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
@@ -49,50 +51,56 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
-    it('should successfully create a new user and hash the password', async () => {
-      // Arrange (Setup the scenario)
-      const email = 'test@example.com';
-      const password = 'plainPassword123';
+    it('should create a new user successfully with all fields', async () => {
+      // Arrange
+      const createUserDto: CreateUserDto = {
+        email: 'test@example.com',
+        password: 'password123',
+        fullName: 'John Doe',
+      };
+
       const hashedPassword = 'hashedPassword123';
+      const savedUser = {
+        id: '1',
+        email: createUserDto.email,
+        passwordHash: hashedPassword,
+        fullName: createUserDto.fullName
+      } as UserEntity;
 
-      // We spy on bcrypt to avoid running the heavy CPU algorithm during tests
-      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
-
-      // Simulate that no user exists with this email
       repository.findOne.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      repository.create.mockReturnValue(savedUser);
+      repository.save.mockResolvedValue(savedUser);
 
-      // Simulate the repository create and save methods
-      const mockCreatedUser = { email, passwordHash: hashedPassword };
-      repository.create.mockReturnValue(mockCreatedUser);
-      repository.save.mockResolvedValue({ id: 'uuid-123', ...mockCreatedUser });
+      // Act
+      const result = await service.create(createUserDto);
 
-      // Act (Execute the function)
-      const result = await service.create(email, password);
-
-      // Assert (Verify the results)
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { email } });
-      expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
-      expect(repository.create).toHaveBeenCalledWith({ email, passwordHash: hashedPassword });
-      expect(repository.save).toHaveBeenCalledWith(mockCreatedUser);
-      expect(result.id).toEqual('uuid-123');
-      expect(result.email).toEqual(email);
+      // Assert
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { email: createUserDto.email } });
+      expect(bcrypt.hash).toHaveBeenCalledWith(createUserDto.password, 10);
+      expect(repository.create).toHaveBeenCalledWith({
+        email: createUserDto.email,
+        passwordHash: hashedPassword,
+        fullName: createUserDto.fullName,
+      });
+      expect(repository.save).toHaveBeenCalledWith(savedUser);
+      expect(result).toEqual(savedUser);
     });
 
-    it('should throw a ConflictException if the email is already in use', async () => {
+    it('should throw ConflictException if email already exists', async () => {
       // Arrange
-      const email = 'existing@example.com';
-      const password = 'password123';
+      const createUserDto: CreateUserDto = {
+        email: 'existing@example.com',
+        password: 'password123',
+        fullName: 'testingName'
+      };
 
-      // Simulate that the database found an existing user
-      repository.findOne.mockResolvedValue({ id: 'uuid-123', email });
+      repository.findOne.mockResolvedValue({ id: '2', email: 'existing@example.com' });
 
       // Act & Assert
-      // We expect the promise to be rejected with a ConflictException
-      await expect(service.create(email, password)).rejects.toThrow(ConflictException);
-
-      // Ensure we didn't try to save anything
-      expect(repository.create).not.toHaveBeenCalled();
-      expect(repository.save).not.toHaveBeenCalled();
+      await expect(service.create(createUserDto))
+        .rejects
+        .toThrow(ConflictException);
     });
   });
 
@@ -183,6 +191,59 @@ describe('UsersService', () => {
 
       // We guarantee that the database doesn't try to save if the user doesn't exists
       expect(repository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    it('should update the password and fullName correctly', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const updateUserDto: UpdateUserDto = {
+        password: 'newPassword123',
+        fullName: 'John Doe' // <--- Added to payload
+      };
+
+      const existingUser = {
+        id: userId,
+        email: 'test@test.com',
+        passwordHash: 'oldHash',
+        fullName: 'Old Name'
+      } as UserEntity;
+
+      const mockedHashedPassword = 'newHashedPassword123';
+
+      repository.findOne.mockResolvedValue(existingUser);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(mockedHashedPassword);
+      repository.save.mockImplementation((user: UserEntity) => Promise.resolve(user));
+
+      // Act
+      const result = await service.update(userId, updateUserDto);
+
+      // Assert
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: userId } });
+      expect(bcrypt.hash).toHaveBeenCalledWith('newPassword123', 10);
+
+      // Ensure the save method was called with both mutations applied
+      expect(repository.save).toHaveBeenCalledWith({
+        id: userId,
+        email: 'test@test.com',
+        passwordHash: mockedHashedPassword,
+        fullName: 'John Doe' // <--- Asserting the mutation happened
+      });
+
+      expect(result.passwordHash).toBe(mockedHashedPassword);
+      expect(result.fullName).toBe('John Doe');
+    });
+
+    it('should throw NotFoundException if user is not found', async () => {
+      // Arrange
+      const userId = 'non-existent-user';
+      repository.findOne.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.update(userId, { fullName: 'John Doe' }))
+        .rejects
+        .toThrow(NotFoundException);
     });
   });
 });

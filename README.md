@@ -71,16 +71,31 @@ docker compose logs -f core-api
 
 ```
 
+## 🌱 Default Seed Data (Testing Credentials)
+
+If the `ENABLE_DB_SEED` environment variable is set to `true`, the application automatically populates the database upon the first boot. You can use the following credentials to authenticate via the `/auth/login` endpoint and explore the RBAC features:
+
+| User Role | Email | Password | Full Name |
+| --- | --- | --- | --- |
+| **ADMIN** | `admin@teste.com` | `teste123` | Admin Test |
+| **STAFF** | `staff@teste.com` | `teste123` | Staff Test |
+| **CUSTOMER** | `customer@teste.com` | `teste123` | Customer Test |
+
+The seeder also provisions a default **Polymorphic Catalog** containing:
+
+* 1x `PHYSICAL_GOODS` (*Enterprise Server Rack Rackmount 42U* with strict inventory limits).
+* 1x `SERVICE` (*Cloud Infrastructure Architecture Consulting*).
+
 ## 🗺️ Services Overview
 
 Once the containers are operational, you can access the environment layout via `localhost`:
 
 | Service | Exposes | URL / Port |
 | --- | --- | --- |
-| **Core API (NestJS)** | Living Documentation (Swagger) | [http://localhost:3000/api-docs](https://www.google.com/search?q=http://localhost:3000/api-docs) |
+| **Core API (NestJS)** | Living Documentation (Swagger) | [http://localhost:3000/api-docs](http://localhost:3000/api-docs) |
 | **Core API (NestJS)** | REST API Gateway | `http://localhost:3000` |
 | **Log Service (Go)** | Internal Listener | `http://localhost:8080` |
-| **RabbitMQ** | Management Console Dashboard | [http://localhost:15672](https://www.google.com/search?q=http://localhost:15672) (guest/guest) |
+| **RabbitMQ** | Management Console Dashboard | [http://localhost:15672](http://localhost:15672) (guest/guest) |
 | **Core Postgres** | Engine Primary Database | `localhost:5432` |
 | **Log Postgres** | Audit Storage Isolated Database | `localhost:5433` |
 

@@ -5,6 +5,9 @@ import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 
 @Entity('users')
 export class UserEntity extends AbstractBaseEntity {
+  @Column({ name: 'full_name' })
+  fullName: string;
+
   @Column({ unique: true })
   email: string;
 

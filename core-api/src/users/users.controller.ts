@@ -7,9 +7,10 @@ import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from './enums/role.enum';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { ApiDocsCreateUser, ApiDocsFindAll, ApiDocsGetProfile, ApiDocsUpdateRole, ApiDocsUsersController } from './users.docs';
+import { ApiDocsCreateUser, ApiDocsFindAll, ApiDocsGetProfile, ApiDocsUpdateRole, ApiDocsUpdateUser, ApiDocsUsersController } from './users.docs';
 import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 import { UserPageOptionsDto } from './dto/user-page-options.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiDocsUsersController()
 @Controller('users')
@@ -17,17 +18,33 @@ export class UsersController {
 
     constructor(private readonly usersService: UsersService) { }
 
-    @Public()
-    @Post()
-    @ApiDocsCreateUser()
-    create(@Body() createUserDto: CreateUserDto) {
-        return this.usersService.create(createUserDto.email, createUserDto.password);
+    @Get()
+    @Roles(Role.STAFF)
+    @ApiDocsFindAll()
+    findAll(@Query() pageOptionsDto: UserPageOptionsDto) {
+        return this.usersService.findAll(pageOptionsDto);
     }
 
     @Get('me')
     @ApiDocsGetProfile()
     getProfile(@CurrentUser() user: UserEntity) {
         return user;
+    }
+
+    @Public()
+    @Post()
+    @ApiDocsCreateUser()
+    create(@Body() createUserDto: CreateUserDto) {
+        return this.usersService.create(createUserDto);
+    }
+
+    @Patch('me')
+    @ApiDocsUpdateUser()
+    async updateProfile(
+        @CurrentUser() user: UserEntity,
+        @Body() updateProfileDto: UpdateUserDto,
+    ) {
+        return this.usersService.update(user.id, updateProfileDto);
     }
 
     @Patch(':id/role')
@@ -38,12 +55,5 @@ export class UsersController {
         @Body() updateRoleDto: UpdateRoleDto,
     ) {
         return this.usersService.updateRole(id, updateRoleDto.role);
-    }
-
-    @Get()
-    @Roles(Role.STAFF)
-    @ApiDocsFindAll()
-    findAll(@Query() pageOptionsDto: UserPageOptionsDto) {
-        return this.usersService.findAll(pageOptionsDto);
     }
 }
