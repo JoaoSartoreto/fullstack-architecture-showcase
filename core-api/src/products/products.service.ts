@@ -8,6 +8,11 @@ import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
 import { CatalogItemCreators } from './factories/catalog.factory';
 import { CatalogValidationUtil } from './utils/catalog-validation.util';
 import { PhysicalGoods } from './entities/physical-goods.entity';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { PageDto } from '../common/pagination/dto/page.dto';
+import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
+import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
+import { applyCatalogFilters } from './utils/catalog-query.util';
 
 @Injectable()
 export class ProductsService {
@@ -29,20 +34,38 @@ export class ProductsService {
     return this.catalogRepository.save(newItem);
   }
 
-  async findAvailable(): Promise<CatalogItem[]> {
-    return this.catalogRepository
-      .createQueryBuilder('item')
+  async findAvailable(pageOptionsDto: CatalogPageOptionsDto): Promise<PageDto<CatalogItem>> {
+    const queryBuilder = this.catalogRepository.createQueryBuilder('item')
       .where('item.is_active = :isActive', { isActive: true })
-      // Logic: "Return if it's a Service OR (it's Physical Goods AND has stock)"
       .andWhere('(item.type = :serviceType OR (item.type = :physicalType AND item.stock_quantity > 0))', {
         serviceType: ItemType.SERVICE,
         physicalType: ItemType.PHYSICAL_GOODS,
-      })
-      .getMany();
+      });
+
+    // Delegate the dynamic filtering pipeline to the pure utility function
+    applyCatalogFilters(queryBuilder, pageOptionsDto);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+    return new PageDto(items, pageMetaDto);
   }
 
-  async findAll(): Promise<CatalogItem[]> {
-    return this.catalogRepository.find();
+  async findAll(pageOptionsDto: CatalogPageOptionsDto): Promise<PageDto<CatalogItem>> {
+    const queryBuilder = this.catalogRepository.createQueryBuilder('item');
+
+    // Apply STAFF-specific security isolation filter
+    if (pageOptionsDto.isActive !== undefined) {
+      queryBuilder.andWhere('item.is_active = :isActive', { isActive: pageOptionsDto.isActive });
+    }
+
+    // Delegate the dynamic filtering pipeline
+    applyCatalogFilters(queryBuilder, pageOptionsDto);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+    return new PageDto(items, pageMetaDto);
   }
 
   async update(id: string, dto: UpdateCatalogItemDto): Promise<CatalogItem> {

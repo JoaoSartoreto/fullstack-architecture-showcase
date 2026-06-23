@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrderValidationUtil } from './order-validation.util';
 import { OrderStatus } from '../enums/order-status.enum';
-import { Role } from '../../common/enums/role.enum';
+import { Role } from '../../users/enums/role.enum';
 import { OrderEntity } from '../entities/order.entity';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
 

@@ -52,7 +52,7 @@ describe('AuthService', () => {
 
       const result = await service.validateUser(email, password);
 
-      expect(usersService.findByEmail).toHaveBeenCalledWith(email);
+      expect(usersService.findByEmail).toHaveBeenCalledWith(email, true);
       expect(bcrypt.compare).toHaveBeenCalledWith(password, 'hashedPass');
 
       expect(result).toEqual({ id: '1', email, role: 'CUSTOMER' });

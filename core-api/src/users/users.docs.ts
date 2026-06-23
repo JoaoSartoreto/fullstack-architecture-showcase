@@ -9,6 +9,7 @@ import {
     ApiTags
 } from '@nestjs/swagger';
 import { UserResponseDto } from './dto/user-response.dto';
+import { ApiPaginatedResponse } from '../common/pagination/decorators/api-paginated-response.decorator';
 
 export function ApiDocsUsersController() {
     return applyDecorators(ApiTags('Users Management'));
@@ -43,6 +44,6 @@ export function ApiDocsFindAll() {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'List all system users (Staff/Admin only)' }),
-        ApiOkResponse({ description: 'List of users retrieved successfully.', type: [UserResponseDto] }) // Array notation!
+        ApiPaginatedResponse(UserResponseDto)
     );
 }

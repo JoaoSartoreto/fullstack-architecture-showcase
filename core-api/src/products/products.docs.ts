@@ -9,6 +9,7 @@ import {
     ApiTags
 } from '@nestjs/swagger';
 import { CatalogItemResponseDto } from './dto/catalog-item-response.dto';
+import { ApiPaginatedResponse } from '../common/pagination/decorators/api-paginated-response.decorator';
 
 export function ApiDocsProductsController() {
     return applyDecorators(ApiTags('Catalog & Products'));
@@ -27,7 +28,7 @@ export function ApiDocsFindAvailable() {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'List all active catalog items available for purchase' }),
-        ApiOkResponse({ description: 'Available catalog items retrieved successfully.', type: [CatalogItemResponseDto] })
+        ApiPaginatedResponse(CatalogItemResponseDto)
     );
 }
 
@@ -35,7 +36,7 @@ export function ApiDocsFindAll() {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'List the entire global catalog including inactive items (Staff/Admin only)' }),
-        ApiOkResponse({ description: 'Complete catalog retrieved successfully.', type: [CatalogItemResponseDto] })
+        ApiPaginatedResponse(CatalogItemResponseDto)
     );
 }
 

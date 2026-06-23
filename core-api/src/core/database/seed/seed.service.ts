@@ -2,7 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../../users/users.service';
 import { ProductsService } from '../../../products/products.service';
-import { Role } from '../../../common/enums/role.enum';
+import { Role } from '../../../users/enums/role.enum';
 import { ItemType } from '../../../products/enums/item-type.enum';
 import { CreateCatalogItemDto } from '../../../products/dto/create-catalog-item.dto';
 

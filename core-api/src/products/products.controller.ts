@@ -1,10 +1,12 @@
-import { Controller, Post, Get, Body, Patch, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Post, Get, Body, Patch, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateCatalogItemDto } from './dto/create-catalog-item.dto';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '../common/enums/role.enum';
+import { Role } from '../users/enums/role.enum';
 import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
 import { ApiDocsCreateProduct, ApiDocsFindAll, ApiDocsFindAvailable, ApiDocsProductsController, ApiDocsUpdateProduct } from './products.docs';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
 
 @ApiDocsProductsController()
 @Controller('products')
@@ -23,15 +25,15 @@ export class ProductsController {
     @Get()
     @Roles(Role.CUSTOMER)
     @ApiDocsFindAvailable()
-    async findAvailable() {
-        return this.productsService.findAvailable();
+    async findAvailable(@Query() pageOptionsDto: CatalogPageOptionsDto) {
+        return this.productsService.findAvailable(pageOptionsDto);
     }
 
     @Get('all')
     @Roles(Role.STAFF)
     @ApiDocsFindAll()
-    async findAll() {
-        return this.productsService.findAll();
+    async findAll(@Query() pageOptionsDto: CatalogPageOptionsDto) {
+        return this.productsService.findAll(pageOptionsDto);
     }
 
     @Patch(':id')

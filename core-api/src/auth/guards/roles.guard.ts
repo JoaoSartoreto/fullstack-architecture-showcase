@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '../../common/enums/role.enum';
+import { Role } from '../../users/enums/role.enum';
 import { ROLES_KEY } from '../../common/decorators/roles.decorator';
 
 // 1. Role Hierarchy Logic

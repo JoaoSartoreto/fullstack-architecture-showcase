@@ -10,13 +10,14 @@ import {
     ApiForbiddenResponse,
     ApiTags
 } from '@nestjs/swagger';
-import { 
-    OrderCustomerListResponseDto, 
-    OrderDetailResponseDto, 
-    OrderResponseDto, 
-    OrderStaffListResponseDto 
+import {
+    OrderCustomerListResponseDto,
+    OrderDetailResponseDto,
+    OrderResponseDto,
+    OrderStaffListResponseDto
 } from './dto/order-response.dto';
 import { OrderMessageResponseDto } from './dto/order-message-response.dto';
+import { ApiPaginatedResponse } from '../common/pagination/decorators/api-paginated-response.decorator';
 
 export function ApiDocsOrdersController() {
     return applyDecorators(ApiTags('Orders & Negotiation'));
@@ -47,7 +48,7 @@ export function ApiDocsFindAllForStaff() {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'List all active system orders (Excludes customer drafts)' }),
-        ApiOkResponse({ description: 'Orders retrieved successfully.', type: [OrderStaffListResponseDto] })
+        ApiPaginatedResponse(OrderStaffListResponseDto)
     );
 }
 
@@ -55,7 +56,7 @@ export function ApiDocsFindAllForCustomer() {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'List all orders belonging to the current customer' }),
-        ApiOkResponse({ description: 'Customer orders retrieved successfully.', type: [OrderCustomerListResponseDto] })
+        ApiPaginatedResponse(OrderCustomerListResponseDto)
     );
 }
 
@@ -73,7 +74,7 @@ export function ApiDocsFindOrderMessages() {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'Get chronologically sorted negotiation chat history' }),
-        ApiOkResponse({ description: 'Messages retrieved successfully.', type: [OrderMessageResponseDto] }),
+        ApiPaginatedResponse(OrderMessageResponseDto),
         ApiForbiddenResponse({ description: 'User does not have permission to access this order.' }),
         ApiNotFoundResponse({ description: 'Order ID not found.' })
     );

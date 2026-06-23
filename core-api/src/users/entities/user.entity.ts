@@ -1,5 +1,5 @@
 import { Exclude } from 'class-transformer';
-import { Role } from '../../common/enums/role.enum';
+import { Role } from '../enums/role.enum';
 import { Entity, Column } from 'typeorm';
 import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 
@@ -9,7 +9,7 @@ export class UserEntity extends AbstractBaseEntity {
   email: string;
 
   @Exclude()
-  @Column({ name: 'password_hash' })
+  @Column({ name: 'password_hash', select: false })
   passwordHash: string;
 
   @Column({ type: 'enum', enum: Role, default: Role.CUSTOMER })

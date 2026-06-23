@@ -8,7 +8,11 @@ import { OrderStatus } from './enums/order-status.enum';
 import { OrderItemEntity } from './entities/order-item.entity';
 import { ProductsService } from './../products/products.service';
 import { OrderMessageEntity } from './entities/order-message.entity';
-import { Role } from '../common/enums/role.enum';
+import { Role } from '../users/enums/role.enum';
+import { OrderPageOptionsDto } from './dto/order-page-options.dto';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { Order } from '../common/pagination/enums/order.enum';
+import { OrderValidationUtil } from './utils/order-validation.util';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -35,6 +39,7 @@ describe('OrdersService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     save: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockProductsService = {
@@ -45,6 +50,7 @@ describe('OrdersService', () => {
     find: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -261,27 +267,64 @@ describe('OrdersService', () => {
   });
 
   describe('findAllForStaff', () => {
-    it('should return all orders except DRAFTs for staff view', async () => {
-      mockOrderRepository.find.mockResolvedValue([]);
-      await service.findAllForStaff();
+    it('should return paginated active orders with user relations', async () => {
+      // Arrange
+      const mockOrders = [{ id: '1', status: OrderStatus.PENDING }];
+      const mockPageOptionsDto = { order: Order.DESC, page: 1, take: 10, skip: 0 } as OrderPageOptionsDto;
 
-      expect(mockOrderRepository.find).toHaveBeenCalledWith({
-        where: { status: expect.any(Object) }, // TypeORM Not() operator
-        relations: { user: true },
-        order: { createdAt: 'DESC' },
-      });
+      const queryBuilderMock = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([mockOrders, 1]),
+      };
+
+      mockOrderRepository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilderMock);
+
+      // Act
+      const result = await service.findAllForStaff(mockPageOptionsDto);
+
+      // Assert
+      expect(mockOrderRepository.createQueryBuilder).toHaveBeenCalledWith('order');
+      expect(queryBuilderMock.leftJoinAndSelect).toHaveBeenCalledWith('order.user', 'user');
+      expect(queryBuilderMock.where).toHaveBeenCalledWith('order.status != :draftStatus', { draftStatus: OrderStatus.DRAFT });
+      expect(queryBuilderMock.getManyAndCount).toHaveBeenCalled();
+
+      expect(result.data).toEqual(mockOrders);
+      expect(result.meta.itemCount).toBe(1);
     });
   });
 
   describe('findAllForCustomer', () => {
-    it('should return only the orders belonging to the logged customer', async () => {
-      mockOrderRepository.find.mockResolvedValue([]);
-      await service.findAllForCustomer('user-1');
+    it('should return paginated orders belonging to the customer', async () => {
+      // Arrange
+      const userId = 'user-1';
+      const mockOrders = [{ id: '1', userId }];
+      const mockPageOptionsDto = { order: Order.DESC, page: 1, take: 10, skip: 0 } as OrderPageOptionsDto;
 
-      expect(mockOrderRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user-1' },
-        order: { createdAt: 'DESC' },
-      });
+      const queryBuilderMock = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([mockOrders, 1]),
+      };
+
+      mockOrderRepository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilderMock);
+
+      // Act
+      const result = await service.findAllForCustomer(userId, mockPageOptionsDto);
+
+      // Assert
+      expect(mockOrderRepository.createQueryBuilder).toHaveBeenCalledWith('order');
+      expect(queryBuilderMock.where).toHaveBeenCalledWith('order.userId = :userId', { userId });
+      expect(queryBuilderMock.getManyAndCount).toHaveBeenCalled();
+
+      expect(result.data).toEqual(mockOrders);
     });
   });
 
@@ -311,18 +354,44 @@ describe('OrdersService', () => {
   });
 
   describe('findOrderMessages', () => {
-    it('should return chat history in DESC order for authorized users', async () => {
-      const mockOrder = { id: 'order-1', userId: 'user-1' };
-      mockOrderRepository.findOne.mockResolvedValueOnce(mockOrder);
-      mockMessageRepository.find.mockResolvedValueOnce([]);
+    it('should return paginated messages if user has access', async () => {
+      // Arrange
+      const orderId = 'order-1';
+      const userId = 'user-1';
+      const userRole = Role.CUSTOMER;
+      const mockOrder = { id: orderId, userId } as OrderEntity;
+      const mockMessages = [{ id: 'msg-1', content: 'Hello' }];
+      const mockPageOptionsDto = { order: Order.ASC, page: 1, take: 10, skip: 0 } as PageOptionsDto;
 
-      await service.findOrderMessages('order-1', 'user-1', Role.CUSTOMER);
+      mockOrderRepository.findOne = jest.fn().mockResolvedValue(mockOrder);
 
-      expect(mockMessageRepository.find).toHaveBeenCalledWith({
-        where: { orderId: 'order-1' },
-        relations: { sender: true },
-        order: { createdAt: 'DESC' }, // Testing your UX decision!
-      });
+      const queryBuilderMock = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([mockMessages, 1]),
+      };
+
+      mockMessageRepository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilderMock);
+
+      // We mock the validation utility so it doesn't throw
+      jest.spyOn(OrderValidationUtil, 'validateOrderExists').mockImplementation(() => { });
+      jest.spyOn(OrderValidationUtil, 'validateOrderAccess').mockImplementation(() => { });
+
+      // Act
+      const result = await service.findOrderMessages(orderId, userId, userRole, mockPageOptionsDto);
+
+      // Assert
+      expect(mockOrderRepository.findOne).toHaveBeenCalledWith({ where: { id: orderId } });
+      expect(mockMessageRepository.createQueryBuilder).toHaveBeenCalledWith('message');
+      expect(queryBuilderMock.leftJoinAndSelect).toHaveBeenCalledWith('message.sender', 'sender');
+      expect(queryBuilderMock.where).toHaveBeenCalledWith('message.orderId = :orderId', { orderId });
+      expect(queryBuilderMock.getManyAndCount).toHaveBeenCalled();
+
+      expect(result.data).toEqual(mockMessages);
+      expect(result.meta.itemCount).toBe(1);
     });
   });
 

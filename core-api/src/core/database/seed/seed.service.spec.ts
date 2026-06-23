@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { SeedService } from './seed.service';
 import { UsersService } from '../../../users/users.service';
 import { ProductsService } from '../../../products/products.service';
-import { Role } from '../../../common/enums/role.enum';
+import { Role } from '../../../users/enums/role.enum';
 
 describe('SeedService', () => {
     let service: SeedService;
