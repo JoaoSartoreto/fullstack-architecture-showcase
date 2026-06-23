@@ -4,7 +4,10 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { UserEntity } from './entities/user.entity';
-import { Role } from '../common/enums/role.enum';
+import { Role } from './enums/role.enum';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { Order } from '../common/pagination/enums/order.enum';
+import { UserPageOptionsDto } from './dto/user-page-options.dto';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
@@ -94,17 +97,42 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of users', async () => {
+    it('should return a paginated array of users', async () => {
       // Arrange
       const mockUsers = [{ id: '1', email: 'test1@test.com' }, { id: '2', email: 'test2@test.com' }];
-      repository.find.mockResolvedValue(mockUsers);
+
+      const mockPageOptionsDto: PageOptionsDto = {
+        order: Order.ASC,
+        page: 1,
+        take: 10,
+        skip: 0,
+      } as UserPageOptionsDto;
+
+      // Create a chainable mock for the QueryBuilder
+      const queryBuilderMock = {
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(2),
+        getRawAndEntities: jest.fn().mockResolvedValue({ entities: mockUsers }),
+      };
+
+      // Ensure the repository mock returns our custom builder
+      repository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilderMock);
 
       // Act
-      const result = await service.findAll();
+      const result = await service.findAll(mockPageOptionsDto);
 
       // Assert
-      expect(repository.find).toHaveBeenCalled();
-      expect(result).toEqual(mockUsers);
+      expect(repository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(queryBuilderMock.orderBy).toHaveBeenCalledWith('user.createdAt', mockPageOptionsDto.order);
+      expect(queryBuilderMock.skip).toHaveBeenCalledWith(mockPageOptionsDto.skip);
+      expect(queryBuilderMock.take).toHaveBeenCalledWith(mockPageOptionsDto.take);
+
+      // Assert the paginated response structure
+      expect(result.data).toEqual(mockUsers);
+      expect(result.meta.itemCount).toBe(2);
+      expect(result.meta.page).toBe(1);
     });
   });
 

@@ -13,7 +13,7 @@ export class AuthService {
 
     // 1. Validates the plain text password against the hashed password in the DB
     async validateUser(email: string, pass: string): Promise<Omit<UserEntity, 'passwordHash'> | null> {
-        const user = await this.usersService.findByEmail(email);
+        const user = await this.usersService.findByEmail(email, true);
 
         // If the user exists, compare the passwords
         if (user && await bcrypt.compare(pass, user.passwordHash)) {
@@ -29,7 +29,7 @@ export class AuthService {
     // 2. Generates the JWT token for the validated user
     async login(email: string, pass: string) {
         const user = await this.validateUser(email, pass);
-         if (!user) throw new UnauthorizedException('Invalid credentials.');
+        if (!user) throw new UnauthorizedException('Invalid credentials.');
 
         const payload = { email: user.email, sub: user.id };
 

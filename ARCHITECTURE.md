@@ -14,7 +14,7 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 ## ✅ Current State (Completed Domains & Infrastructure)
 
 ### 1. Infrastructure & Living Documentation
-- **Idempotent Database Seeding:** Automated, environment-protected initialization scripts (`SeedModule`) that populate core users and a polymorphic catalog upon first boot, using highly optimized $O(1)$ SQL `EXISTS` lookups to prevent hydration overhead.
+- **Idempotent Database Seeding:** Automated, environment-protected initialization scripts (`SeedModule`) that populate core users and a polymorphic catalog upon first boot, using highly optimized O(1) SQL `EXISTS` lookups to prevent hydration overhead.
 - **Living Documentation (OpenAPI/Swagger):** Fully integrated Swagger UI accessible at `/api-docs`.
   - Implemented via Nest CLI Plugin for automated static analysis of DTOs.
   - Utilized **Compound Decorators** to encapsulate verbose documentation rules, keeping Controllers strictly focused on routing logic.
@@ -37,16 +37,16 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 - **Shopping Cart (`DRAFT`):** Customers have full CRUD control over their draft items.
 - **Checkout Process:** Freezes product prices chronologically to guarantee historical financial immutability regardless of future catalog changes.
 - **Domain-Driven Design (DDD):** `OrdersService` acts purely as an orchestrator. Inventory deduction is strictly delegated to the `ProductsService` within an ACID Database Transaction to prevent race conditions and overselling.
-- **Diffing Algorithm:** The `IN_NEGOTIATION` phase uses an $O(N+M)$ algorithmic approach utilizing JavaScript `Map` and `Set` structures to upsert, modify, or delete order lines without destroying the historical `createdAt` metadata.
+- **Diffing Algorithm:** The `IN_NEGOTIATION` phase uses an O(N+M) algorithmic approach utilizing JavaScript `Map` and `Set` structures to upsert, modify, or delete order lines without destroying the historical `createdAt` metadata.
 - **Bidirectional Communication:** Implemented `OrderMessageEntity` to act as a timeline/chat for negotiation between Staff and Customers.
 
 ### 5. Asynchronous Auditing & Distributed Traceability (The Outbox Core)
 - **Distributed Traceability Middleware:** Implemented a low-level HTTP Middleware capturing incoming `X-Trace-Id` headers or natively generating highly collatable IDs (UUIDv7 sequence simulations). The execution flow is bound using `AsyncLocalStorage` (`RequestContext`), isolating thread-like telemetry states without modifying service method signatures.
-- **Audit-Aware JWT Validation:** Extensively customized `JwtStrategy` to intercept the authentication handshake, query the database database for identity presence, and automatically inject the authenticated user (`actorId`) into the active tracing context.
+- **Audit-Aware JWT Validation:** Extensively customized `JwtStrategy` to intercept the authentication handshake, query the database for identity presence, and automatically inject the authenticated user (`actorId`) into the active tracing context.
 - **Transactional Outbox Pattern (Dual-Write Protection):** Implemented a native TypeORM `OutboxSubscriber` that intercepts database lifecycle persistence hooks (`INSERT`/`UPDATE`). It serializes state alterations (`before`/`after` snapshots) and persists them into the `outbox_events` table using the *exact same ACID database transaction* as the primary business domain entity. This structurally prevents message-broker down-time from causing distributed data loss or desynchronization.
 - **Dynamic Cron Engine (The Relay Worker):** Engineered a highly resilient background daemon (`OutboxScheduler`) that consumes the event queue. It registers programmatically decoupled Cron Jobs (`outboxRelayJob` and `outboxSweepJob`) via NestJS `SchedulerRegistry`.
   - **Relay Job:** Polls pending events, batches deliveries, publishes safely to RabbitMQ using transactional confirmations, and flags events as processed.
-  - **Sweep Job (Garbage Collection):** Automatically cleans historically processed outbox logs older than the defined retention threshold to prevent database table bloat.
+  - **Sweep Job (Garbage GC):** Automatically cleans historically processed outbox logs older than the defined retention threshold to prevent database table bloat.
 - **Unified Telemetry Ingestion:**
   - **AuditInterceptor:** Leverages RxJS pipeline streams (`tap`) to intercept non-exceptional HTTP workflows, extracting low-overhead telemetry (path, method, payload size, status code, and latency calculation).
   - **AllExceptionsFilter & ExceptionParser:** Formats and sanitizes application exceptions globally. It dispatches a robust, deep technical stack trace and metadata payload to the internal logging pipeline while returning a clean, scrubbed contract JSON response to external customers, preventing infrastructure data leaks.
@@ -63,7 +63,14 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
   - Complex state machines and diffing algorithms.
   - Interceptors, Global Exception Filters, and custom Typings.
   - TypeORM Transactional Subscribers, Schedulers, and Context storage blocks.
+  - QueryBuilders and pure utility data mutators.
 - **Test Strategy Decoupling:** Purposely separated transport testing from unit metrics by mocking the NestJS underlying dependencies, enforcing rapid, memory-efficient assertions.
+
+### 8. API Usability Optimization (Pagination & Dynamic Filtering)
+- **Generic Pagination Architecture:** Implemented a highly scalable, mathematically precise pagination structure utilizing `PageOptionsDto`, `PageMetaDto`, and `PageDto<T>`.
+- **Advanced Swagger Generics Integration:** Engineered the `@ApiPaginatedResponse` compound decorator utilizing OpenAPI's `ApiExtraModels` and `$ref` schema paths to statically type nested generic arrays without runtime bloat.
+- **Dynamic Filtering Pipeline (SOLID):** Leveraged DTO Inheritance (e.g., `CatalogPageOptionsDto`) to attach domain-specific search filters. Extracted complex TypeORM `QueryBuilder` dynamic conditional pipelines into pure utility functions (e.g., `applyCatalogFilters`), strictly adhering to SRP (Single Responsibility Principle) and DRY constraints.
+- **Database-Level Defense in Depth:** Enforced strict column projection (e.g., `select: false` for `password_hash`) to prevent memory exposure. Hardcoded core domain security rules directly into the `QueryBuilder` root `.where()` clauses to structurally prevent unauthorized data fetching via query string manipulation.
 
 ---
 
@@ -76,15 +83,15 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 | **POST** | `/auth/login` | Public | Generates JWT Bearer token. |
 | **POST** | `/users` | Public | Registers a new user account. |
 | **GET** | `/users/me` | Authenticated | Returns the profile of the currently logged-in user. |
-| **GET** | `/users` | `STAFF` | Lists all users in the system. |
+| **GET** | `/users` | `STAFF` | Lists all users paginated (allows search by email and role). |
 | **PATCH** | `/users/:id/role` | `ADMIN` | Elevates or demotes user privileges. |
 
 ### Products (Catalog)
 | Method | Endpoint | Role | Objective |
 | :--- | :--- | :--- | :--- |
 | **POST** | `/products` | `STAFF` | Creates a Polymorphic item (Goods or Services). |
-| **GET** | `/products` | `CUSTOMER` | Returns only Active items (and goods with stock > 0). |
-| **GET** | `/products/all` | `STAFF` | Returns the entire global catalog. |
+| **GET** | `/products` | `CUSTOMER` | Returns active paginated items (filters: search, price, type). |
+| **GET** | `/products/all` | `STAFF` | Returns the entire global catalog paginated (includes inactive filters). |
 | **PATCH** | `/products/:id` | `STAFF` | Updates metadata. Validates constraints via Utils. |
 
 ### Orders (State Machine & Chat)
@@ -96,10 +103,10 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 | **PATCH** | `/orders/:id/items` | `STAFF` | Triggers the Diffing Algorithm to adjust order lines. |
 | **PATCH** | `/orders/:id/status` | `STAFF` | Advances the machine state. Triggers inventory deduction if APPROVED. |
 | **POST** | `/orders/:id/messages` | `BOTH` | Appends a text node to the negotiation timeline. |
-| **GET** | `/orders` | `STAFF` | Lightweight fetch. Lists all active system orders. |
-| **GET** | `/orders/my-orders` | `CUSTOMER` | Lightweight fetch. Lists self-owned orders. |
+| **GET** | `/orders` | `STAFF` | Paginated fetch. Lists all active system orders (filters: status). |
+| **GET** | `/orders/my-orders` | `CUSTOMER` | Paginated fetch. Lists self-owned orders (filters: status). |
 | **GET** | `/orders/:id` | `BOTH` | Fetches the full envelope, items, and current products. |
-| **GET** | `/orders/:id/messages` | `BOTH` | Fetches isolated, chronologically sorted chat history. |
+| **GET** | `/orders/:id/messages` | `BOTH` | Fetches isolated, chronologically sorted paginated chat history. |
 
 ---
 
@@ -108,6 +115,3 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 ### Phase 6: End-to-End & Integration Testing
 - [ ] **E2E Test Harness:** Setup a full containerized integration testing environment utilizing Testcontainers to simulate real HTTP requests and message publishing workflows.
 - [ ] **Idempotent API Contract Testing:** Validate JSON contracts against the Go Microservice and database states under high concurrency simulation.
-
-### Phase 7: API Usability Optimization
-- [ ] **Generic Pagination Architecture:** Implement reusable global pagination interceptors/decorators mapping `take`, `skip`, and `total` to support front-end infinite scrolling constraints.

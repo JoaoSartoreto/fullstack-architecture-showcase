@@ -3,7 +3,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { OrderEntity } from '../entities/order.entity';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
 import { OrderStatus } from '../enums/order-status.enum';
-import { Role } from '../../common/enums/role.enum';
+import { Role } from '../../users/enums/role.enum';
 
 export const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     [OrderStatus.DRAFT]: [OrderStatus.PENDING],

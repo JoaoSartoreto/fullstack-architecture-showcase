@@ -1,13 +1,15 @@
-import { Controller, Post, Body, Get, Patch, Param, ParseUUIDPipe, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Param, ParseUUIDPipe, Delete, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '../common/enums/role.enum';
+import { Role } from '../users/enums/role.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserEntity } from '../users/entities/user.entity';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateOrderMessageDto } from './dto/create-order-message.dto';
 import { ApiDocsCheckout, ApiDocsCreateCart, ApiDocsFindAllForCustomer, ApiDocsFindAllForStaff, ApiDocsFindOneDetails, ApiDocsFindOrderMessages, ApiDocsOrdersController, ApiDocsRemoveItemFromCart, ApiDocsSendOrderMessage, ApiDocsUpdateNegotiationItems, ApiDocsUpdateStatus } from './orders.docs';
+import { OrderPageOptionsDto } from './dto/order-page-options.dto';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 
 @ApiDocsOrdersController()
 @Controller('orders')
@@ -38,15 +40,18 @@ export class OrdersController {
     @Get()
     @Roles(Role.STAFF)
     @ApiDocsFindAllForStaff()
-    async findAllForStaff() {
-        return this.ordersService.findAllForStaff();
+    async findAllForStaff(@Query() pageOptionsDto: OrderPageOptionsDto) {
+        return this.ordersService.findAllForStaff(pageOptionsDto);
     }
 
     @Get('my-orders')
     @Roles(Role.CUSTOMER)
     @ApiDocsFindAllForCustomer()
-    async findAllForCustomer(@CurrentUser() user: UserEntity) {
-        return this.ordersService.findAllForCustomer(user.id);
+    async findAllForCustomer(
+        @CurrentUser() user: UserEntity,
+        @Query() pageOptionsDto: OrderPageOptionsDto
+    ) {
+        return this.ordersService.findAllForCustomer(user.id, pageOptionsDto);
     }
 
     @Get(':id')
@@ -65,8 +70,9 @@ export class OrdersController {
     async findOrderMessages(
         @Param('id', ParseUUIDPipe) id: string,
         @CurrentUser() user: UserEntity,
+        @Query() pageOptionsDto: PageOptionsDto
     ) {
-        return this.ordersService.findOrderMessages(id, user.id, user.role);
+        return this.ordersService.findOrderMessages(id, user.id, user.role, pageOptionsDto);
     }
 
     @Patch(':id/checkout')

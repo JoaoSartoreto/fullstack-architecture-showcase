@@ -4,6 +4,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CatalogItem } from './entities/catalog-item.entity';
 import { ItemType } from './enums/item-type.enum';
+import { Order } from '../common/pagination/enums/order.enum';
+import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -121,18 +123,75 @@ describe('ProductsService', () => {
   });
 
   describe('findAvailable', () => {
-    it('should return available items using the query builder', async () => {
-      const mockResult = [{ id: '1', name: 'Monitor' }];
-      mockQueryBuilder.getMany.mockResolvedValue(mockResult);
+    it('should return available items using the query builder and pagination', async () => {
+      // Arrange
+      const mockItems = [{ id: '1', name: 'Item 1' }];
+      const mockPageOptionsDto = {
+        order: Order.ASC,
+        page: 1,
+        take: 10,
+        skip: 0,
+      } as CatalogPageOptionsDto;
 
-      const result = await service.findAvailable();
+      const queryBuilderMock = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([mockItems, 1]),
+      };
 
+      // Inject the mock builder into the repository
+      repository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilderMock);
+
+      // Act
+      const result = await service.findAvailable(mockPageOptionsDto);
+
+      // Assert
       expect(repository.createQueryBuilder).toHaveBeenCalledWith('item');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('item.is_active = :isActive', { isActive: true });
-      expect(mockQueryBuilder.where).toHaveBeenCalled();
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
+      expect(queryBuilderMock.where).toHaveBeenCalledWith('item.is_active = :isActive', { isActive: true });
+      expect(queryBuilderMock.getManyAndCount).toHaveBeenCalled();
 
-      expect(result).toEqual(mockResult);
+      expect(result.data).toEqual(mockItems);
+      expect(result.meta.itemCount).toBe(1);
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all items using the query builder and pagination', async () => {
+      // Arrange
+      const mockItems = [{ id: '1', name: 'Item 1' }, { id: '2', name: 'Item 2' }];
+      const mockPageOptionsDto = {
+        order: Order.DESC,
+        page: 1,
+        take: 20,
+        skip: 0,
+        isActive: false, // Testing the STAFF security filter
+      } as CatalogPageOptionsDto;
+
+      const queryBuilderMock = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([mockItems, 2]),
+      };
+
+      repository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilderMock);
+
+      // Act
+      const result = await service.findAll(mockPageOptionsDto);
+
+      // Assert
+      expect(repository.createQueryBuilder).toHaveBeenCalledWith('item');
+      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith('item.is_active = :isActive', { isActive: false });
+      expect(queryBuilderMock.orderBy).toHaveBeenCalledWith('item.createdAt', Order.DESC);
+      expect(queryBuilderMock.getManyAndCount).toHaveBeenCalled();
+
+      expect(result.data).toEqual(mockItems);
+      expect(result.meta.itemCount).toBe(2);
     });
   });
 

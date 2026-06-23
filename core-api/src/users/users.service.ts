@@ -3,7 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Role } from '../common/enums/role.enum';
+import { Role } from './enums/role.enum';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { PageDto } from '../common/pagination/dto/page.dto';
+import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
+import { applyUserFilters } from './utils/user-query.util';
+import { UserPageOptionsDto } from './dto/user-page-options.dto';
 
 @Injectable()
 export class UsersService {
@@ -28,16 +33,33 @@ export class UsersService {
         return this.userRepository.save(newUser);
     }
 
-    async findByEmail(email: string): Promise<UserEntity | null> {
-        return this.userRepository.findOne({ where: { email } });
+    async findByEmail(email: string, includePassword = false): Promise<UserEntity | null> {
+        const queryBuilder = this.userRepository.createQueryBuilder('user')
+            .where('user.email = :email', { email });
+
+        if (includePassword) {
+            queryBuilder.addSelect('user.passwordHash');
+        }
+
+        return queryBuilder.getOne();
     }
 
     async findById(id: string): Promise<UserEntity | null> {
         return await this.userRepository.findOne({ where: { id } });
     }
 
-    async findAll(): Promise<UserEntity[]> {
-        return this.userRepository.find();
+    async findAll(pageOptionsDto: UserPageOptionsDto): Promise<PageDto<UserEntity>> {
+        const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+        // Delegate the dynamic filtering pipeline
+        applyUserFilters(queryBuilder, pageOptionsDto);
+
+        const itemCount = await queryBuilder.getCount();
+        const { entities } = await queryBuilder.getRawAndEntities();
+
+        const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+        return new PageDto(entities, pageMetaDto);
     }
 
     async updateRole(id: string, newRole: Role): Promise<UserEntity> {

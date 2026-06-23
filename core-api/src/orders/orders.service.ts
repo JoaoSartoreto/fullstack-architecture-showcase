@@ -11,8 +11,13 @@ import { OrderValidationUtil } from './utils/order-validation.util';
 import { ProductsService } from '../products/products.service';
 import { OrderItemProcessor } from './utils/order-item-processor.util';
 import { OrderMessageEntity } from './entities/order-message.entity';
-import { Role } from '../common/enums/role.enum';
+import { Role } from '../users/enums/role.enum';
 import { CreateOrderMessageDto } from './dto/create-order-message.dto';
+import { applyOrderFilters } from './utils/order-query.util';
+import { OrderPageOptionsDto } from './dto/order-page-options.dto';
+import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
+import { PageDto } from '../common/pagination/dto/page.dto';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 
 @Injectable()
 export class OrdersService {
@@ -107,23 +112,29 @@ export class OrdersService {
         await this.dataSource.manager.delete(OrderItemEntity, { id: itemId });
     }
 
-    async findAllForStaff(): Promise<OrderEntity[]> {
-        return this.orderRepository.find({
-            where: {
-                status: Not(OrderStatus.DRAFT), // Staff doesn't see private shopping carts
-            },
-            relations: {
-                user: true,
-            },
-            order: { createdAt: 'DESC' },
-        });
+    async findAllForStaff(pageOptionsDto: OrderPageOptionsDto): Promise<PageDto<OrderEntity>> {
+        const queryBuilder = this.orderRepository.createQueryBuilder('order')
+            .leftJoinAndSelect('order.user', 'user') // Equivalent to relations: { user: true }
+            .where('order.status != :draftStatus', { draftStatus: OrderStatus.DRAFT }); // Hard security constraint
+
+        applyOrderFilters(queryBuilder, pageOptionsDto);
+
+        const [orders, itemCount] = await queryBuilder.getManyAndCount();
+        const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+        return new PageDto(orders, pageMetaDto);
     }
 
-    async findAllForCustomer(userId: string): Promise<OrderEntity[]> {
-        return this.orderRepository.find({
-            where: { userId },
-            order: { createdAt: 'DESC' },
-        });
+    async findAllForCustomer(userId: string, pageOptionsDto: OrderPageOptionsDto): Promise<PageDto<OrderEntity>> {
+        const queryBuilder = this.orderRepository.createQueryBuilder('order')
+            .where('order.userId = :userId', { userId }); // Hard security constraint
+
+        applyOrderFilters(queryBuilder, pageOptionsDto);
+
+        const [orders, itemCount] = await queryBuilder.getManyAndCount();
+        const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+        return new PageDto(orders, pageMetaDto);
     }
 
     async findOneDetails(orderId: string, userId: string, userRole: Role): Promise<OrderEntity> {
@@ -141,17 +152,28 @@ export class OrdersService {
         return order;
     }
 
-    async findOrderMessages(orderId: string, userId: string, userRole: Role): Promise<OrderMessageEntity[]> {
+    async findOrderMessages(
+        orderId: string,
+        userId: string,
+        userRole: Role,
+        pageOptionsDto: PageOptionsDto
+    ): Promise<PageDto<OrderMessageEntity>> {
         const order = await this.orderRepository.findOne({ where: { id: orderId } });
 
         OrderValidationUtil.validateOrderExists(order, orderId);
         OrderValidationUtil.validateOrderAccess(order, userId, userRole);
 
-        return this.messageRepository.find({
-            where: { orderId },
-            relations: { sender: true }, 
-            order: { createdAt: 'DESC' },
-        });
+        const queryBuilder = this.messageRepository.createQueryBuilder('message')
+            .leftJoinAndSelect('message.sender', 'sender')
+            .where('message.orderId = :orderId', { orderId })
+            .orderBy('message.createdAt', pageOptionsDto.order)
+            .skip(pageOptionsDto.skip)
+            .take(pageOptionsDto.take);
+
+        const [messages, itemCount] = await queryBuilder.getManyAndCount();
+        const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+        return new PageDto(messages, pageMetaDto);
     }
 
     async addMessage(
