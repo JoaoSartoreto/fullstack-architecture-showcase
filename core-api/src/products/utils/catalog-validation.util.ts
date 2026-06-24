@@ -1,6 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UpdateCatalogItemDto } from '../dto/update-catalog-item.dto';
 import { ItemType } from '../enums/item-type.enum';
+import { CatalogItem } from '../entities/catalog-item.entity';
 
 export class CatalogValidationUtil {
     static validateUpdateLogic(itemType: string, dto: UpdateCatalogItemDto): void {
@@ -18,6 +19,18 @@ export class CatalogValidationUtil {
             throw new BadRequestException(
                 `Insufficient stock for physical good '${productName}'. Available: ${currentStock}, Requested: ${requestedQuantity}.`
             );
+        }
+    }
+
+    static validateCatalogItemExists(item: CatalogItem | null, itemId: string): asserts item is CatalogItem {
+        if (!item) {
+            throw new NotFoundException(`Catalog item with ID ${itemId} not found.`);
+        }
+    }
+
+    static validateCreatorLogicExists(createLogic: any, itemType: string): void {
+        if (!createLogic) {
+            throw new BadRequestException(`Invalid item type: ${itemType}`);
         }
     }
 }

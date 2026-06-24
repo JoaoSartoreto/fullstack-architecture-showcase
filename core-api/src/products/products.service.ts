@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { CatalogItem } from './entities/catalog-item.entity';
@@ -8,7 +8,6 @@ import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
 import { CatalogItemCreators } from './factories/catalog.factory';
 import { CatalogValidationUtil } from './utils/catalog-validation.util';
 import { PhysicalGoods } from './entities/physical-goods.entity';
-import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 import { PageDto } from '../common/pagination/dto/page.dto';
 import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
 import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
@@ -23,13 +22,10 @@ export class ProductsService {
   ) { }
 
   async create(dto: CreateCatalogItemDto): Promise<CatalogItem> {
-    // Look up the specific creator function based on the provided type
-    const createLogic = CatalogItemCreators[dto.type]
+    const createLogic = CatalogItemCreators[dto.type];
 
-    if (!createLogic)
-      throw new BadRequestException(`Invalid item type: ${dto.type}`);
+    CatalogValidationUtil.validateCreatorLogicExists(createLogic, dto.type); // <-- Encapsulated
 
-    // Execute the creator function and save to the database
     const newItem = createLogic(this.catalogRepository.manager, dto);
     return this.catalogRepository.save(newItem);
   }
@@ -71,23 +67,16 @@ export class ProductsService {
   async update(id: string, dto: UpdateCatalogItemDto): Promise<CatalogItem> {
     const item = await this.catalogRepository.findOne({ where: { id } });
 
-    if (!item) {
-      throw new NotFoundException(`Catalog item with ID ${id} not found`);
-    }
-
+    CatalogValidationUtil.validateCatalogItemExists(item, id); // <-- Encapsulated
     CatalogValidationUtil.validateUpdateLogic(item.type, dto);
 
-    // Cleaner object merging
     return this.catalogRepository.save({ ...item, ...dto });
   }
 
   async decrementStock(manager: EntityManager, productId: string, quantity: number): Promise<void> {
     const product = await manager.findOne(CatalogItem, { where: { id: productId } });
 
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${productId} not found`);
-    }
-
+    CatalogValidationUtil.validateCatalogItemExists(product, productId);
     if (product.type === ItemType.PHYSICAL_GOODS) {
       const physicalGood = product as PhysicalGoods;
 
@@ -98,6 +87,19 @@ export class ProductsService {
       );
 
       physicalGood.stockQuantity -= quantity;
+      await manager.save(physicalGood);
+    }
+  }
+
+  async incrementStock(manager: EntityManager, productId: string, quantity: number): Promise<void> {
+    const product = await manager.findOne(CatalogItem, { where: { id: productId } });
+
+    CatalogValidationUtil.validateCatalogItemExists(product, productId);
+
+    if (product.type === ItemType.PHYSICAL_GOODS) {
+      const physicalGood = product as PhysicalGoods;
+
+      physicalGood.stockQuantity += quantity;
       await manager.save(physicalGood);
     }
   }

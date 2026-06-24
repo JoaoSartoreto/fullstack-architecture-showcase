@@ -1,6 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CatalogValidationUtil } from './catalog-validation.util';
 import { ItemType } from '../enums/item-type.enum';
+import { CatalogItem } from '../entities/catalog-item.entity';
 
 describe('CatalogValidationUtil', () => {
     describe('validateUpdateLogic', () => {
@@ -67,6 +68,28 @@ describe('CatalogValidationUtil', () => {
             // Act & Assert
             expect(() => CatalogValidationUtil.validateStockAvailability(50, 10, 'Smartphone'))
                 .not.toThrow();
+        });
+    });
+
+    describe('validateCatalogItemExists', () => {
+        it('should pass silently if catalog item exists', () => {
+            const item = { id: 'prod-1' } as CatalogItem;
+            expect(() => CatalogValidationUtil.validateCatalogItemExists(item, 'prod-1')).not.toThrow();
+        });
+
+        it('should throw NotFoundException if catalog item is null', () => {
+            expect(() => CatalogValidationUtil.validateCatalogItemExists(null, 'prod-1')).toThrow(NotFoundException);
+        });
+    });
+
+    describe('validateCreatorLogicExists', () => {
+        it('should pass silently if strategy function is present', () => {
+            const mockStrategy = () => { };
+            expect(() => CatalogValidationUtil.validateCreatorLogicExists(mockStrategy, 'PHYSICAL_GOODS')).not.toThrow();
+        });
+
+        it('should throw BadRequestException if strategy function is missing', () => {
+            expect(() => CatalogValidationUtil.validateCreatorLogicExists(null, 'INVALID_TYPE')).toThrow(BadRequestException);
         });
     });
 });

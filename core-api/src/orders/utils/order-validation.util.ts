@@ -1,15 +1,15 @@
-// src/orders/utils/order-validation.util.ts
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrderEntity } from '../entities/order.entity';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
 import { OrderStatus } from '../enums/order-status.enum';
 import { Role } from '../../users/enums/role.enum';
+import { OrderItemEntity } from '../entities/order-item.entity';
 
 export const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     [OrderStatus.DRAFT]: [OrderStatus.PENDING],
     [OrderStatus.PENDING]: [OrderStatus.IN_NEGOTIATION, OrderStatus.APPROVED, OrderStatus.REJECTED],
     [OrderStatus.IN_NEGOTIATION]: [OrderStatus.APPROVED, OrderStatus.REJECTED],
-    [OrderStatus.APPROVED]: [OrderStatus.PAID],
+    [OrderStatus.APPROVED]: [OrderStatus.PAID, OrderStatus.REJECTED],
     [OrderStatus.PAID]: [OrderStatus.DELIVERED],
     [OrderStatus.REJECTED]: [],
     [OrderStatus.DELIVERED]: [],
@@ -71,6 +71,36 @@ export class OrderValidationUtil {
     static validateOrderAccess(order: OrderEntity, userId: string, userRole: Role): void {
         if (userRole === Role.CUSTOMER && order.userId !== userId) {
             throw new ForbiddenException('You do not have permission to access this order.');
+        }
+    }
+
+    static validateCartNotEmpty(items: OrderItemEntity[]): void {
+        if (!items || items.length === 0) {
+            throw new BadRequestException('Cannot proceed to checkout with an empty cart.');
+        }
+    }
+
+    static validateOrderItemExists(item: OrderItemEntity | null, itemId: string): asserts item is OrderItemEntity {
+        if (!item) {
+            throw new NotFoundException(`Cart item with ID ${itemId} not found.`);
+        }
+    }
+
+    static validateCanSendMessages(currentStatus: OrderStatus): void {
+        if (currentStatus !== OrderStatus.IN_NEGOTIATION) {
+            throw new BadRequestException('Messages can only be sent when the order is in IN_NEGOTIATION status.');
+        }
+    }
+
+    static validateCanApproveByCustomer(currentStatus: OrderStatus): void {
+        if (currentStatus !== OrderStatus.IN_NEGOTIATION) {
+            throw new BadRequestException('You can only approve orders that are currently in negotiation.');
+        }
+    }
+
+    static validateCanCancelByCustomer(currentStatus: OrderStatus): void {
+        if (![OrderStatus.PENDING, OrderStatus.IN_NEGOTIATION].includes(currentStatus)) {
+            throw new BadRequestException('You can only cancel orders that are pending or in negotiation.');
         }
     }
 }

@@ -29,14 +29,18 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 ### 3. Catalog Domain (Inventory)
 - Implemented **Single Table Inheritance (Polymorphism)** (`CatalogItem` as abstract base).
 - Supported types: `PHYSICAL_GOODS` (enforces strict stock control) and `SERVICE` (enforces estimated duration without inventory tracking).
+- **Stock Restoration:** Engineered bidirectional inventory capabilities (`incrementStock` / `decrementStock`) to safely handle business exceptions like order cancellations after approval.
 - Factory Pattern implementation for semantic entity creation.
-- Extracted validation logic to dedicated Utility classes to respect the Single Responsibility Principle.
+- Extracted validation logic to dedicated Utility classes (`CatalogValidationUtil`) to strictly respect the Single Responsibility Principle (SRP).
 
 ### 4. Orders Domain (The Core Engine)
-- **State Machine:** Governs the immutable lifecycle of an order: `DRAFT` -> `PENDING` -> `IN_NEGOTIATION` -> `APPROVED` / `REJECTED` -> `DELIVERED`.
-- **Shopping Cart (`DRAFT`):** Customers have full CRUD control over their draft items.
-- **Checkout Process:** Freezes product prices chronologically to guarantee historical financial immutability regardless of future catalog changes.
-- **Domain-Driven Design (DDD):** `OrdersService` acts purely as an orchestrator. Inventory deduction is strictly delegated to the `ProductsService` within an ACID Database Transaction to prevent race conditions and overselling.
+- **State Machine:** Governs the immutable lifecycle of an order: `DRAFT` -> `PENDING` -> `IN_NEGOTIATION` -> `APPROVED` -> `PAID` -> `DELIVERED` (with `REJECTED` branching out to handle cancellations and default scenarios).
+- **Smart Shopping Cart (`DRAFT`):** Customers have full CRUD control over their items. The cart utilizes a "Smart Upsert" mechanism: if a draft already exists, incoming payloads are organically merged using the Diffing Algorithm, preventing orphaned carts.
+- **Checkout Process:** Protected by strict structural guards preventing empty-cart checkouts. It freezes product prices chronologically to guarantee historical financial immutability regardless of future catalog changes.
+- **Domain-Driven Design (DDD):** `OrdersService` acts purely as an orchestrator. 
+  - Inventory mutations are strictly delegated to the `ProductsService` via a `SideEffectsHandler` within an ACID Database Transaction to prevent race conditions and overselling.
+  - Exception throwing and rule verification are fully delegated to `OrderValidationUtil`.
+- **Customer Autonomy:** While Staff can propose adjustments during negotiation, the architecture enforces B2B fairness by allowing the `CUSTOMER` to explicitly approve negotiations or cancel pending orders directly.
 - **Diffing Algorithm:** The `IN_NEGOTIATION` phase uses an O(N+M) algorithmic approach utilizing JavaScript `Map` and `Set` structures to upsert, modify, or delete order lines without destroying the historical `createdAt` metadata.
 - **Bidirectional Communication:** Implemented `OrderMessageEntity` to act as a timeline/chat for negotiation between Staff and Customers.
 
@@ -83,6 +87,7 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 | **POST** | `/auth/login` | Public | Generates JWT Bearer token. |
 | **POST** | `/users` | Public | Registers a new user account. |
 | **GET** | `/users/me` | Authenticated | Returns the profile of the currently logged-in user. |
+| **PATCH**| `/users/me` | Authenticated | Updates the profile data of the currently logged-in user. |
 | **GET** | `/users` | `STAFF` | Lists all users paginated (allows search by email and role). |
 | **PATCH** | `/users/:id/role` | `ADMIN` | Elevates or demotes user privileges. |
 
@@ -97,11 +102,13 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 ### Orders (State Machine & Chat)
 | Method | Endpoint | Role | Objective |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/orders/cart` | `CUSTOMER` | Creates a cart or pushes items into an existing DRAFT. |
+| **POST** | `/orders/cart` | `CUSTOMER` | Creates a cart or smartly appends items into an existing DRAFT. |
 | **DELETE**| `/orders/cart/items/:itemId` | `CUSTOMER` | Removes a specific item from the active cart. |
 | **PATCH** | `/orders/:id/checkout` | `CUSTOMER` | Submits the draft, freezing prices and advancing state. |
+| **PATCH** | `/orders/:id/approve` | `CUSTOMER` | Customer officially accepts the negotiation terms. |
+| **PATCH** | `/orders/:id/cancel` | `CUSTOMER` | Customer safely aborts a pending or negotiating order. |
 | **PATCH** | `/orders/:id/items` | `STAFF` | Triggers the Diffing Algorithm to adjust order lines. |
-| **PATCH** | `/orders/:id/status` | `STAFF` | Advances the machine state. Triggers inventory deduction if APPROVED. |
+| **PATCH** | `/orders/:id/status` | `STAFF` | Advances the machine state. Triggers side effects (e.g., inventory tracking). |
 | **POST** | `/orders/:id/messages` | `BOTH` | Appends a text node to the negotiation timeline. |
 | **GET** | `/orders` | `STAFF` | Paginated fetch. Lists all active system orders (filters: status). |
 | **GET** | `/orders/my-orders` | `CUSTOMER` | Paginated fetch. Lists self-owned orders (filters: status). |

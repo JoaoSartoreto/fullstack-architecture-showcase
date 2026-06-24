@@ -13,6 +13,9 @@ import { OrderPageOptionsDto } from './dto/order-page-options.dto';
 import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 import { Order } from '../common/pagination/enums/order.enum';
 import { OrderValidationUtil } from './utils/order-validation.util';
+import { CatalogItem } from '../products/entities/catalog-item.entity';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -23,6 +26,7 @@ describe('OrdersService', () => {
     save: jest.fn(),
     findOne: jest.fn(),
     delete: jest.fn(),
+    findOneOrFail: jest.fn()
   };
 
   // Create the DataSource double (manages the transaction scope)
@@ -44,6 +48,7 @@ describe('OrdersService', () => {
 
   const mockProductsService = {
     decrementStock: jest.fn(),
+    incrementStock: jest.fn(),
   };
 
   const mockMessageRepository = {
@@ -75,20 +80,64 @@ describe('OrdersService', () => {
   // Cart and Checkout
   describe('createDraft', () => {
     it('should successfully create an order header in DRAFT status and process its items', async () => {
-      const mockOrderHeader = { id: 'order-uuid', userId: 'user-1', status: OrderStatus.DRAFT };
-      const mockProduct = { id: 'prod-1', name: 'Product 1', price: 100, isActive: true };
+      const createDto: CreateOrderDto = {
+        items: [{ productId: 'prod-1', quantity: 2 }]
+      };
 
-      mockEntityManager.create.mockReturnValueOnce(mockOrderHeader);
-      mockEntityManager.save.mockResolvedValueOnce(mockOrderHeader);
-      mockEntityManager.findOne.mockResolvedValueOnce(mockProduct);
-
-      const result = await service.createDraft('user-1', {
-        items: [{ productId: 'prod-1', quantity: 2 }],
+      // Dynamic mock to handle the Upsert sequence:
+      // 1st call: Checks for existing DRAFT OrderEntity (returns null)
+      // 2nd call: Checks for CatalogItem inside syncNegotiatedItems (returns valid product)
+      mockEntityManager.findOne.mockImplementation(async (entity: any) => {
+        if (entity === OrderEntity) return null;
+        if (entity === CatalogItem) return { id: 'prod-1', price: 150.00, isActive: true } as CatalogItem;
+        return null;
       });
 
-      expect(mockDataSource.transaction).toHaveBeenCalled();
+      const mockOrderHeader = { id: 'order-1', userId: 'user-1', status: OrderStatus.DRAFT, items: [] };
+      mockEntityManager.create.mockReturnValue(mockOrderHeader);
+
+      // Mock save to return the entity for both Order and OrderItem
+      mockEntityManager.save.mockImplementation(async (entity) => entity);
+
+      // Final reload mock
+      mockEntityManager.findOneOrFail.mockResolvedValue({
+        ...mockOrderHeader,
+        items: [{ productId: 'prod-1', quantity: 2, priceAtPurchase: 150.00 }]
+      });
+
+      const result = await service.createDraft('user-1', createDto);
+
+      expect(mockEntityManager.create).toHaveBeenCalled();
+      expect(mockEntityManager.save).toHaveBeenCalled();
       expect(result.status).toBe(OrderStatus.DRAFT);
-      expect(mockEntityManager.save).toHaveBeenCalledTimes(2); // Header + Item Line
+      expect(result.items.length).toBeGreaterThan(0);
+    });
+
+    it('should append items to an existing DRAFT cart if one already exists', async () => {
+      const createDto: CreateOrderDto = {
+        items: [{ productId: 'prod-1', quantity: 5 }]
+      };
+
+      const existingOrder = {
+        id: 'order-1',
+        userId: 'user-1',
+        status: OrderStatus.DRAFT,
+        items: [{ id: 'item-1', productId: 'prod-1', quantity: 2 }]
+      };
+
+      mockEntityManager.findOne.mockImplementation(async (entity: any) => {
+        if (entity === OrderEntity) return existingOrder;
+        if (entity === CatalogItem) return { id: 'prod-1', price: 150.00, isActive: true } as CatalogItem;
+        return null;
+      });
+
+      mockEntityManager.save.mockImplementation(async (entity) => entity);
+      mockEntityManager.findOneOrFail.mockResolvedValue(existingOrder);
+
+      await service.createDraft('user-1', createDto);
+
+      // Since it's an append via syncNegotiatedItems, create should NOT be called for the order header
+      expect(mockEntityManager.create).not.toHaveBeenCalledWith(OrderEntity, expect.anything());
     });
   });
 
@@ -112,6 +161,52 @@ describe('OrdersService', () => {
       expect(mockOrder.status).toBe(OrderStatus.PENDING);
       expect(mockOrder.items[0].priceAtPurchase).toBe(150); // Locked price check
       expect(result.status).toBe(OrderStatus.PENDING);
+    });
+
+    it('should throw BadRequestException if the cart is empty', async () => {
+      const emptyOrder = { id: 'order-1', userId: 'user-1', status: OrderStatus.DRAFT, items: [] };
+
+      mockEntityManager.findOne.mockResolvedValue(emptyOrder);
+
+      await expect(service.checkout('order-1', 'user-1')).rejects.toThrow(BadRequestException);
+      expect(mockEntityManager.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Customer Autonomy', () => {
+    it('approveByCustomer should transition IN_NEGOTIATION to APPROVED', async () => {
+      const negotiatedOrder = {
+        id: 'order-1',
+        userId: 'user-1',
+        status: OrderStatus.IN_NEGOTIATION,
+        items: []
+      };
+
+      mockEntityManager.findOne.mockResolvedValue(negotiatedOrder);
+      mockEntityManager.save.mockImplementation(async (entity) => entity);
+
+      const result = await service.approveByCustomer('order-1', 'user-1');
+
+      expect(result.status).toBe(OrderStatus.APPROVED);
+      expect(mockEntityManager.save).toHaveBeenCalled();
+    });
+
+    it('cancelByCustomer should transition PENDING to REJECTED', async () => {
+      const pendingOrder = {
+        id: 'order-1',
+        userId: 'user-1',
+        status: OrderStatus.PENDING,
+        items: []
+      };
+
+      mockEntityManager.findOne.mockResolvedValue(pendingOrder);
+      mockEntityManager.save.mockImplementation(async (entity) => entity);
+
+      const result = await service.cancelByCustomer('order-1', 'user-1');
+
+      expect(result.status).toBe(OrderStatus.REJECTED);
+      expect(result.rejectionReason).toBe('Canceled by the customer.');
+      expect(mockEntityManager.save).toHaveBeenCalled();
     });
   });
 
@@ -425,6 +520,39 @@ describe('OrdersService', () => {
       ).rejects.toThrow(BadRequestException);
 
       expect(mockMessageRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateStatus - Side Effects', () => {
+    it('should restore inventory when an APPROVED order is REJECTED', async () => {
+      const approvedOrder = {
+        id: 'order-1',
+        userId: 'user-1',
+        status: OrderStatus.APPROVED,
+        items: [{ productId: 'prod-1', quantity: 5 }]
+      };
+
+      const updateDto: UpdateOrderStatusDto = {
+        status: OrderStatus.REJECTED,
+        rejectionReason: 'Customer did not pay.'
+      };
+
+      mockEntityManager.findOne.mockResolvedValue(approvedOrder);
+      mockEntityManager.save.mockImplementation(async (entity) => entity);
+
+      // Mock the injected ProductsService
+      jest.spyOn(mockProductsService, 'incrementStock').mockResolvedValue(undefined);
+
+      const result = await service.updateStatus('order-1', updateDto);
+
+      expect(result.status).toBe(OrderStatus.REJECTED);
+      expect(result.rejectionReason).toBe('Customer did not pay.');
+      // Crucial assertion: verifies the "handleTransitionSideEffects" logic
+      expect(mockProductsService.incrementStock).toHaveBeenCalledWith(
+        expect.anything(),
+        'prod-1',
+        5
+      );
     });
   });
 });

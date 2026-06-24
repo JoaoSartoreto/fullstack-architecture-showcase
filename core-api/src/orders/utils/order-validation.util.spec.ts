@@ -4,6 +4,7 @@ import { OrderStatus } from '../enums/order-status.enum';
 import { Role } from '../../users/enums/role.enum';
 import { OrderEntity } from '../entities/order.entity';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
+import { OrderItemEntity } from '../entities/order-item.entity';
 
 describe('OrderValidationUtil', () => {
     describe('validateOrderExists', () => {
@@ -121,6 +122,47 @@ describe('OrderValidationUtil', () => {
             const order = { id: 'o1', userId: 'customer-id' } as OrderEntity;
             expect(() => OrderValidationUtil.validateOrderAccess(order, 'admin-id', Role.ADMIN))
                 .not.toThrow();
+        });
+    });
+
+    describe('validateCartNotEmpty', () => {
+        it('should pass silently if items exist', () => {
+            const items = [{ id: 'item-1' }] as OrderItemEntity[];
+            expect(() => OrderValidationUtil.validateCartNotEmpty(items)).not.toThrow();
+        });
+
+        it('should throw BadRequestException if items array is empty or null', () => {
+            expect(() => OrderValidationUtil.validateCartNotEmpty([])).toThrow(BadRequestException);
+            expect(() => OrderValidationUtil.validateCartNotEmpty(null as any)).toThrow(BadRequestException);
+        });
+    });
+
+    describe('validateOrderItemExists', () => {
+        it('should pass silently if item exists', () => {
+            const item = { id: 'item-1' } as OrderItemEntity;
+            expect(() => OrderValidationUtil.validateOrderItemExists(item, 'item-1')).not.toThrow();
+        });
+
+        it('should throw NotFoundException if item is null', () => {
+            expect(() => OrderValidationUtil.validateOrderItemExists(null, 'item-1')).toThrow(NotFoundException);
+        });
+    });
+
+    describe('New Lifecycle Guard Shortcuts', () => {
+        it('validateCanSendMessages should throw if not in negotiation', () => {
+            expect(() => OrderValidationUtil.validateCanSendMessages(OrderStatus.DRAFT)).toThrow(BadRequestException);
+            expect(() => OrderValidationUtil.validateCanSendMessages(OrderStatus.IN_NEGOTIATION)).not.toThrow();
+        });
+
+        it('validateCanApproveByCustomer should throw if not in negotiation', () => {
+            expect(() => OrderValidationUtil.validateCanApproveByCustomer(OrderStatus.PENDING)).toThrow(BadRequestException);
+            expect(() => OrderValidationUtil.validateCanApproveByCustomer(OrderStatus.IN_NEGOTIATION)).not.toThrow();
+        });
+
+        it('validateCanCancelByCustomer should throw if already processed or draft', () => {
+            expect(() => OrderValidationUtil.validateCanCancelByCustomer(OrderStatus.APPROVED)).toThrow(BadRequestException);
+            expect(() => OrderValidationUtil.validateCanCancelByCustomer(OrderStatus.PENDING)).not.toThrow();
+            expect(() => OrderValidationUtil.validateCanCancelByCustomer(OrderStatus.IN_NEGOTIATION)).not.toThrow();
         });
     });
 });
