@@ -7,35 +7,24 @@ import { OrderValidationUtil } from '../../orders/utils/order-validation.util';
 
 export class OrderItemProcessor {
 
-    // Processes items when a new DRAFT cart is created
-    static async processDraftItems(
-        manager: EntityManager,
-        orderId: string,
-        itemsDto: OrderItemDto[]
-    ): Promise<void> {
-        for (const itemDto of itemsDto) {
-            await this.createNewItemLine(manager, orderId, itemDto);
-        }
-    }
-
     // The complete Diffing Algorithm for the IN_NEGOTIATION phase
     static async syncNegotiatedItems(
-        manager: EntityManager, 
-        order: OrderEntity, 
+        manager: EntityManager,
+        order: OrderEntity,
         incomingItemsDto: OrderItemDto[]
     ): Promise<void> {
         const incomingProductIds = new Set(incomingItemsDto.map(item => item.productId));
-        const existingItemsMap = new Map(order.items.map(item => [item.productId, item]));
+        const existingItemsMap = new Map((order.items || []).map(item => [item.productId, item]));
 
-        await this.removeObsoleteItems(manager, order.items, incomingProductIds);
+        await this.removeObsoleteItems(manager, order.items || [], incomingProductIds);
         await this.upsertIncomingItems(manager, order.id, incomingItemsDto, existingItemsMap);
     }
 
     /* --- Internal Helpers for the Processor --- */
 
     private static async removeObsoleteItems(
-        manager: EntityManager, 
-        existingItems: OrderItemEntity[], 
+        manager: EntityManager,
+        existingItems: OrderItemEntity[],
         incomingProductIds: Set<string>
     ): Promise<void> {
         const itemsToDelete = existingItems.filter(item => !incomingProductIds.has(item.productId));
@@ -46,9 +35,9 @@ export class OrderItemProcessor {
     }
 
     private static async upsertIncomingItems(
-        manager: EntityManager, 
-        orderId: string, 
-        incomingItemsDto: OrderItemDto[], 
+        manager: EntityManager,
+        orderId: string,
+        incomingItemsDto: OrderItemDto[],
         existingItemsMap: Map<string, OrderItemEntity>
     ): Promise<void> {
         for (const dto of incomingItemsDto) {
@@ -63,7 +52,11 @@ export class OrderItemProcessor {
         }
     }
 
-    private static async createNewItemLine(manager: EntityManager, orderId: string, itemDto: OrderItemDto): Promise<void> {
+    private static async createNewItemLine(
+        manager: EntityManager,
+        orderId: string, 
+        itemDto: OrderItemDto
+    ): Promise<void> {
         const product = await manager.findOne(CatalogItem, { where: { id: itemDto.productId } });
 
         OrderValidationUtil.validateProductEligibility(product, itemDto.productId);

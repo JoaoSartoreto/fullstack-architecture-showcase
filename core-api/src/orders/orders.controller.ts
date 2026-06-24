@@ -7,7 +7,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserEntity } from '../users/entities/user.entity';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateOrderMessageDto } from './dto/create-order-message.dto';
-import { ApiDocsCheckout, ApiDocsCreateCart, ApiDocsFindAllForCustomer, ApiDocsFindAllForStaff, ApiDocsFindOneDetails, ApiDocsFindOrderMessages, ApiDocsOrdersController, ApiDocsRemoveItemFromCart, ApiDocsSendOrderMessage, ApiDocsUpdateNegotiationItems, ApiDocsUpdateStatus } from './orders.docs';
+import { ApiDocsApproveNegotiation, ApiDocsCancelOrder, ApiDocsCheckout, ApiDocsCreateCart, ApiDocsFindAllForCustomer, ApiDocsFindAllForStaff, ApiDocsFindOneDetails, ApiDocsFindOrderMessages, ApiDocsOrdersController, ApiDocsRemoveItemFromCart, ApiDocsSendOrderMessage, ApiDocsUpdateNegotiationItems, ApiDocsUpdateStatus } from './orders.docs';
 import { OrderPageOptionsDto } from './dto/order-page-options.dto';
 import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 
@@ -83,6 +83,26 @@ export class OrdersController {
         @CurrentUser() user: UserEntity,
     ) {
         return this.ordersService.checkout(id, user.id);
+    }
+
+    @Patch(':id/approve')
+    @Roles(Role.CUSTOMER)
+    @ApiDocsApproveNegotiation()
+    async approveByCustomer(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser() user: UserEntity,
+    ) {
+        return this.ordersService.approveByCustomer(id, user.id);
+    }
+
+    @Patch(':id/cancel')
+    @Roles(Role.CUSTOMER)
+    @ApiDocsCancelOrder()
+    async cancelByCustomer(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser() user: UserEntity,
+    ) {
+        return this.ordersService.cancelByCustomer(id, user.id);
     }
 
     @Patch(':id/status')

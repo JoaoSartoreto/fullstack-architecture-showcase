@@ -5,7 +5,7 @@ This repository is a proof-of-concept enterprise system simulating a highly conc
 For an in-depth look at domain boundaries, state machines, and technical architectural decisions, please read our [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## ✨ Key Features
-* **Domain-Driven Design (DDD):** Strict separation of concerns handling complex state machines for orders and polymorphic catalog inventories.
+* **Domain-Driven Design (DDD):** Strict separation of concerns handling complex B2B state machines (including Customer Autonomy and Smart Cart Upserts), bidirectional inventory control, and polymorphic catalog management.
 * **100% Traceability:** Custom `AsyncLocalStorage` middleware and RxJS interceptors capture non-blocking telemetry and map actions to actor IDs.
 * **Transactional Outbox Pattern:** Dual-write protection intercepting TypeORM persistence hooks to guarantee event publishing to RabbitMQ without distributed data loss.
 * **Advanced API Usability:** Fully generic, mathematically precise pagination architecture with DTO inheritance for dynamic SQL QueryBuilder filtering.
@@ -92,10 +92,10 @@ Once the containers are operational, you can access the environment layout via `
 
 | Service | Exposes | URL / Port |
 | --- | --- | --- |
-| **Core API (NestJS)** | Living Documentation (Swagger) | [http://localhost:3000/api-docs](http://localhost:3000/api-docs) |
+| **Core API (NestJS)** | Living Documentation (Swagger) | [http://localhost:3000/api-docs](https://www.google.com/search?q=http://localhost:3000/api-docs) |
 | **Core API (NestJS)** | REST API Gateway | `http://localhost:3000` |
 | **Log Service (Go)** | Internal Listener | `http://localhost:8080` |
-| **RabbitMQ** | Management Console Dashboard | [http://localhost:15672](http://localhost:15672) (guest/guest) |
+| **RabbitMQ** | Management Console Dashboard | [http://localhost:15672](https://www.google.com/search?q=http://localhost:15672) (guest/guest) |
 | **Core Postgres** | Engine Primary Database | `localhost:5432` |
 | **Log Postgres** | Audit Storage Isolated Database | `localhost:5433` |
 

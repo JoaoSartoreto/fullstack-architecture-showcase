@@ -119,3 +119,21 @@ export function ApiDocsRemoveItemFromCart() {
         ApiNotFoundResponse({ description: 'Cart item or Order not found.' })
     );
 }
+
+export function ApiDocsApproveNegotiation() {
+    return applyDecorators(
+        ApiBearerAuth('JWT-auth'),
+        ApiOperation({ summary: 'Customer: Approve an order currently in negotiation' }),
+        ApiOkResponse({ description: 'Order approved successfully.', type: OrderResponseDto }),
+        ApiBadRequestResponse({ description: 'Order is not in IN_NEGOTIATION status.' })
+    );
+}
+
+export function ApiDocsCancelOrder() {
+    return applyDecorators(
+        ApiBearerAuth('JWT-auth'),
+        ApiOperation({ summary: 'Customer: Cancel a pending or negotiating order' }),
+        ApiOkResponse({ description: 'Order canceled successfully.', type: OrderResponseDto }),
+        ApiBadRequestResponse({ description: 'Order cannot be canceled at this stage.' })
+    );
+}

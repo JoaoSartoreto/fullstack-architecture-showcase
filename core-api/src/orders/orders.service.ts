@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrderEntity } from './entities/order.entity';
@@ -32,16 +32,27 @@ export class OrdersService {
 
     async createDraft(userId: string, createOrderDto: CreateOrderDto): Promise<OrderEntity> {
         return this.dataSource.transaction(async (manager) => {
-            const orderHeader = manager.create(OrderEntity, {
-                userId,
-                status: OrderStatus.DRAFT
+            let order = await manager.findOne(OrderEntity, {
+                where: { userId, status: OrderStatus.DRAFT },
+                relations: { items: true }
             });
-            const savedOrder = await manager.save(orderHeader);
 
-            // Processing delegated to the Item Processor
-            await OrderItemProcessor.processDraftItems(manager, savedOrder.id, createOrderDto.items);
+            if (!order) {
+                const orderHeader = manager.create(OrderEntity, {
+                    userId,
+                    status: OrderStatus.DRAFT
+                });
 
-            return savedOrder;
+                order = await manager.save(orderHeader);
+                order.items = [];
+            }
+
+            await OrderItemProcessor.syncNegotiatedItems(manager, order, createOrderDto.items);
+
+            return manager.findOneOrFail(OrderEntity, {
+                where: { id: order.id },
+                relations: { items: true }
+            });
         });
     }
 
@@ -53,6 +64,7 @@ export class OrdersService {
             });
 
             OrderValidationUtil.validateOrderExists(order, orderId);
+            OrderValidationUtil.validateCartNotEmpty(order.items); // <-- Encapsulated
             OrderValidationUtil.validateStateTransition(order.status, OrderStatus.PENDING);
 
             await this.freezeOrderPrices(manager, order.items);
@@ -87,9 +99,8 @@ export class OrdersService {
             OrderValidationUtil.validateOrderExists(order, orderId);
             OrderValidationUtil.validateStateTransition(order.status, updateDto.status);
 
-            if (updateDto.status === OrderStatus.APPROVED) {
-                await this.processInventoryDeduction(manager, order.items);
-            }
+            // Isolate and delegate all transition side-effects (e.g., inventory mutations)
+            await this.handleTransitionSideEffects(manager, order.items, order.status, updateDto.status);
 
             this.applyNewStatus(order, updateDto);
 
@@ -103,10 +114,7 @@ export class OrdersService {
             relations: { order: true }
         });
 
-        if (!item) {
-            throw new NotFoundException(`Cart item with ID ${itemId} not found.`);
-        }
-
+        OrderValidationUtil.validateOrderItemExists(item, itemId); // <-- Encapsulated
         OrderValidationUtil.validateDraftOwnershipAndState(item.order, userId);
 
         await this.dataSource.manager.delete(OrderItemEntity, { id: itemId });
@@ -186,13 +194,7 @@ export class OrdersService {
 
         OrderValidationUtil.validateOrderExists(order, orderId);
         OrderValidationUtil.validateOrderAccess(order, userId, userRole);
-
-        // Business rule: Messages can only be exchanged during negotiation
-        if (order.status !== OrderStatus.IN_NEGOTIATION) {
-            throw new BadRequestException(
-                `Messages can only be sent when the order is in IN_NEGOTIATION status.`
-            );
-        }
+        OrderValidationUtil.validateCanSendMessages(order.status); // <-- Encapsulated
 
         const message = this.messageRepository.create({
             orderId: order.id,
@@ -203,12 +205,71 @@ export class OrdersService {
         return this.messageRepository.save(message);
     }
 
+    async approveByCustomer(orderId: string, userId: string): Promise<OrderEntity> {
+        return this.dataSource.transaction(async (manager) => {
+            const order = await manager.findOne(OrderEntity, {
+                where: { id: orderId, userId },
+                relations: { items: true }
+            });
+
+            OrderValidationUtil.validateOrderExists(order, orderId);
+            OrderValidationUtil.validateCanApproveByCustomer(order.status); // <-- Encapsulated
+
+            const previousStatus = order.status;
+            order.status = OrderStatus.APPROVED;
+
+            await this.handleTransitionSideEffects(manager, order.items, previousStatus, order.status);
+
+            return manager.save(order);
+        });
+    }
+
+    async cancelByCustomer(orderId: string, userId: string): Promise<OrderEntity> {
+        return this.dataSource.transaction(async (manager) => {
+            const order = await manager.findOne(OrderEntity, {
+                where: { id: orderId, userId },
+                relations: { items: true }
+            });
+
+            OrderValidationUtil.validateOrderExists(order, orderId);
+            OrderValidationUtil.validateCanCancelByCustomer(order.status); // <-- Encapsulated
+
+            order.status = OrderStatus.REJECTED;
+            order.rejectionReason = 'Canceled by the customer.';
+
+            return manager.save(order);
+        });
+    }
+
     /* --- Private Processing Helpers --- */
+
+    private async handleTransitionSideEffects(
+        manager: EntityManager,
+        items: OrderItemEntity[],
+        currentStatus: OrderStatus,
+        newStatus: OrderStatus
+    ): Promise<void> {
+        // Scenario 1: Stock deduction upon negotiation approval
+        if (newStatus === OrderStatus.APPROVED && currentStatus !== OrderStatus.APPROVED) {
+            await this.processInventoryDeduction(manager, items);
+        }
+
+        // Scenario 2: Stock restoration upon cancellation of an already approved order
+        if (currentStatus === OrderStatus.APPROVED && newStatus === OrderStatus.REJECTED) {
+            await this.processInventoryRestoration(manager, items);
+        }
+    }
 
     // Isolates the loop and external service call
     private async processInventoryDeduction(manager: EntityManager, items: OrderItemEntity[]): Promise<void> {
         for (const item of items) {
             await this.productsService.decrementStock(manager, item.productId, item.quantity);
+        }
+    }
+
+    private async processInventoryRestoration(manager: EntityManager, items: OrderItemEntity[]): Promise<void> {
+        for (const item of items) {
+            await this.productsService.incrementStock(manager, item.productId, item.quantity);
         }
     }
 

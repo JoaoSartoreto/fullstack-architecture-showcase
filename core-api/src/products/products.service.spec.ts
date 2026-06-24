@@ -6,6 +6,7 @@ import { CatalogItem } from './entities/catalog-item.entity';
 import { ItemType } from './enums/item-type.enum';
 import { Order } from '../common/pagination/enums/order.enum';
 import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
+import { EntityManager } from 'typeorm';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -224,6 +225,48 @@ describe('ProductsService', () => {
         where: { name: itemName },
       });
       expect(result).toBe(false);
+    });
+  });
+
+  describe('incrementStock', () => {
+    let mockManager: Partial<EntityManager>;
+
+    beforeEach(() => {
+      // Create a localized mock just for these transaction tests
+      mockManager = {
+        findOne: jest.fn(),
+        save: jest.fn(),
+      };
+    });
+
+    it('should add quantity back to stockQuantity if item is PHYSICAL_GOODS', async () => {
+      const physicalGood = {
+        id: 'prod-1',
+        type: ItemType.PHYSICAL_GOODS,
+        stockQuantity: 10,
+      };
+
+      (mockManager.findOne as jest.Mock).mockResolvedValue(physicalGood);
+      (mockManager.save as jest.Mock).mockResolvedValue(physicalGood);
+
+      await service.incrementStock(mockManager as EntityManager, 'prod-1', 5);
+
+      expect(physicalGood.stockQuantity).toBe(15);
+      expect(mockManager.save).toHaveBeenCalledWith(physicalGood);
+    });
+
+    it('should safely ignore stock increment if item is SERVICE', async () => {
+      const serviceItem = {
+        id: 'serv-1',
+        type: ItemType.SERVICE,
+      };
+
+      (mockManager.findOne as jest.Mock).mockResolvedValue(serviceItem);
+
+      await service.incrementStock(mockManager as EntityManager, 'serv-1', 5);
+
+      // Assert that save is never called since services don't hold stock
+      expect(mockManager.save).not.toHaveBeenCalled();
     });
   });
 });
