@@ -1,9 +1,9 @@
 import { EntityManager } from 'typeorm';
-import { OrderItemProcessor } from './order-item-processor.util';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
-import { OrderEntity } from '../entities/order.entity';
 import { OrderItemDto } from '../dto/create-order.dto';
+import { OrderEntity } from '../entities/order.entity';
 import { OrderStatus } from '../enums/order-status.enum';
+import { OrderItemProcessor } from './order-item-processor.util';
 
 describe('OrderItemProcessor', () => {
     let mockManager: Partial<EntityManager>;

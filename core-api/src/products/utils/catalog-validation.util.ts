@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UpdateCatalogItemDto } from '../dto/update-catalog-item.dto';
-import { ItemType } from '../enums/item-type.enum';
 import { CatalogItem } from '../entities/catalog-item.entity';
+import { ItemType } from '../enums/item-type.enum';
 
 export class CatalogValidationUtil {
     static validateUpdateLogic(itemType: string, dto: UpdateCatalogItemDto): void {

@@ -1,7 +1,7 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { OrderEntity } from './order.entity';
-import { UserEntity } from '../../users/entities/user.entity';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
+import { UserEntity } from '../../users/entities/user.entity';
+import { OrderEntity } from './order.entity';
 
 @Entity('order_messages')
 export class OrderMessageEntity extends AbstractBaseEntity{

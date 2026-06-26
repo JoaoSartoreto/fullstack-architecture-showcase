@@ -1,9 +1,8 @@
-// src/core/outbox/outbox.subscriber.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource, InsertEvent, UpdateEvent, EntityManager } from 'typeorm';
-import { OutboxSubscriber } from './outbox.subscriber';
-import { OutboxEntity } from '../entities/outbox.entity';
+import { DataSource, EntityManager, InsertEvent, UpdateEvent } from 'typeorm';
 import { RequestContext } from '../../context/request-context';
+import { OutboxEntity } from '../entities/outbox.entity';
+import { OutboxSubscriber } from './outbox.subscriber';
 
 describe('OutboxSubscriber', () => {
     let subscriber: OutboxSubscriber;

@@ -1,15 +1,15 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiOperation,
-    ApiCreatedResponse,
-    ApiOkResponse,
-    ApiConflictResponse,
-    ApiNotFoundResponse,
     ApiBearerAuth,
+    ApiConflictResponse,
+    ApiCreatedResponse,
+    ApiNotFoundResponse,
+    ApiOkResponse,
+    ApiOperation,
     ApiTags
 } from '@nestjs/swagger';
-import { UserResponseDto } from './dto/user-response.dto';
 import { ApiPaginatedResponse } from '../common/pagination/decorators/api-paginated-response.decorator';
+import { UserResponseDto } from './dto/user-response.dto';
 
 export function ApiDocsUsersController() {
     return applyDecorators(ApiTags('Users Management'));

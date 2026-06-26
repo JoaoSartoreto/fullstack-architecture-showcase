@@ -1,21 +1,21 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource } from 'typeorm';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { OrdersService } from './orders.service';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { OrderEntity } from './entities/order.entity';
-import { OrderStatus } from './enums/order-status.enum';
-import { OrderItemEntity } from './entities/order-item.entity';
-import { ProductsService } from './../products/products.service';
-import { OrderMessageEntity } from './entities/order-message.entity';
-import { Role } from '../users/enums/role.enum';
-import { OrderPageOptionsDto } from './dto/order-page-options.dto';
+import { DataSource } from 'typeorm';
 import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 import { Order } from '../common/pagination/enums/order.enum';
-import { OrderValidationUtil } from './utils/order-validation.util';
 import { CatalogItem } from '../products/entities/catalog-item.entity';
+import { Role } from '../users/enums/role.enum';
+import { ProductsService } from './../products/products.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderPageOptionsDto } from './dto/order-page-options.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { OrderItemEntity } from './entities/order-item.entity';
+import { OrderMessageEntity } from './entities/order-message.entity';
+import { OrderEntity } from './entities/order.entity';
+import { OrderStatus } from './enums/order-status.enum';
+import { OrdersService } from './orders.service';
+import { OrderValidationUtil } from './utils/order-validation.util';
 
 describe('OrdersService', () => {
   let service: OrdersService;

@@ -1,6 +1,6 @@
 import { SelectQueryBuilder } from 'typeorm';
-import { CatalogItem } from '../entities/catalog-item.entity';
 import { CatalogPageOptionsDto } from '../dto/catalog-page-options.dto';
+import { CatalogItem } from '../entities/catalog-item.entity';
 
 /**
  * Mutates the provided QueryBuilder to apply shared dynamic filters and pagination constraints.

@@ -1,16 +1,16 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from './entities/user.entity';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Role } from './enums/role.enum';
-import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
-import { PageDto } from '../common/pagination/dto/page.dto';
+import { Repository } from 'typeorm';
 import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
-import { applyUserFilters } from './utils/user-query.util';
-import { UserPageOptionsDto } from './dto/user-page-options.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { PageDto } from '../common/pagination/dto/page.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserPageOptionsDto } from './dto/user-page-options.dto';
+import { UserEntity } from './entities/user.entity';
+import { Role } from './enums/role.enum';
+import { applyUserFilters } from './utils/user-query.util';
+import { UserValidationUtil } from './utils/user-validation.util';
 
 @Injectable()
 export class UsersService {
@@ -26,7 +26,7 @@ export class UsersService {
         const { password, ...userData } = createUserDto;
 
         const userExists = await this.userRepository.findOne({ where: { email: userData.email } });
-        if (userExists) throw new ConflictException('This e-mail is already in use.');
+        UserValidationUtil.validateEmailIsUnique(userExists);
 
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -72,7 +72,7 @@ export class UsersService {
     async update(userId: string, updateUserDto: UpdateUserDto): Promise<UserEntity> {
         const user = await this.userRepository.findOne({ where: { id: userId } });
 
-        if (!user) throw new NotFoundException('User not found.');
+        UserValidationUtil.validateUserExists(user);
 
         // Isolate the password for hashing, group everything else into 'safeData'
         const { password, ...safeData } = updateUserDto;
@@ -93,7 +93,7 @@ export class UsersService {
     async updateRole(id: string, newRole: Role): Promise<UserEntity> {
         const user = await this.findById(id);
 
-        if (!user) throw new NotFoundException(`User with ID ${id} not found.`);
+        UserValidationUtil.validateUserExists(user, id);
 
         user.role = newRole;
         return this.userRepository.save(user);

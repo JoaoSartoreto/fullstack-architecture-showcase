@@ -1,23 +1,22 @@
-// src/orders/orders.docs.ts
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiCreatedResponse,
-    ApiOkResponse,
     ApiBadRequestResponse,
-    ApiNotFoundResponse,
+    ApiBearerAuth,
+    ApiCreatedResponse,
     ApiForbiddenResponse,
+    ApiNotFoundResponse,
+    ApiOkResponse,
+    ApiOperation,
     ApiTags
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../common/pagination/decorators/api-paginated-response.decorator';
+import { OrderMessageResponseDto } from './dto/order-message-response.dto';
 import {
     OrderCustomerListResponseDto,
     OrderDetailResponseDto,
     OrderResponseDto,
     OrderStaffListResponseDto
 } from './dto/order-response.dto';
-import { OrderMessageResponseDto } from './dto/order-message-response.dto';
-import { ApiPaginatedResponse } from '../common/pagination/decorators/api-paginated-response.decorator';
 
 export function ApiDocsOrdersController() {
     return applyDecorators(ApiTags('Orders & Negotiation'));

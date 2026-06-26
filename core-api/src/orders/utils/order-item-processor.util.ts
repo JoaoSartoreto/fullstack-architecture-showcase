@@ -1,9 +1,9 @@
 import { EntityManager } from 'typeorm';
-import { OrderEntity } from './../../orders/entities/order.entity';
-import { OrderItemEntity } from '../../orders/entities/order-item.entity';
-import { CatalogItem } from '../../products/entities/catalog-item.entity';
 import { OrderItemDto } from '../../orders/dto/create-order.dto';
+import { OrderItemEntity } from '../../orders/entities/order-item.entity';
 import { OrderValidationUtil } from '../../orders/utils/order-validation.util';
+import { CatalogItem } from '../../products/entities/catalog-item.entity';
+import { OrderEntity } from './../../orders/entities/order.entity';
 
 export class OrderItemProcessor {
 

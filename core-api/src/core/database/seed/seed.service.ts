@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UsersService } from '../../../users/users.service';
+import { CreateCatalogItemDto } from '../../../products/dto/create-catalog-item.dto';
+import { ItemType } from '../../../products/enums/item-type.enum';
 import { ProductsService } from '../../../products/products.service';
 import { Role } from '../../../users/enums/role.enum';
-import { ItemType } from '../../../products/enums/item-type.enum';
-import { CreateCatalogItemDto } from '../../../products/dto/create-catalog-item.dto';
+import { UsersService } from '../../../users/users.service';
 
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {

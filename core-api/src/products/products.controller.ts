@@ -1,12 +1,17 @@
-import { Controller, Post, Get, Body, Patch, Param, ParseUUIDPipe, Query } from '@nestjs/common';
-import { ProductsService } from './products.service';
-import { CreateCatalogItemDto } from './dto/create-catalog-item.dto';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../users/enums/role.enum';
-import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
-import { ApiDocsCreateProduct, ApiDocsFindAll, ApiDocsFindAvailable, ApiDocsProductsController, ApiDocsUpdateProduct } from './products.docs';
-import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
+import { CreateCatalogItemDto } from './dto/create-catalog-item.dto';
+import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
+import { 
+    ApiDocsCreateProduct, 
+    ApiDocsFindAll, 
+    ApiDocsFindAvailable, 
+    ApiDocsProductsController, 
+    ApiDocsUpdateProduct 
+} from './products.docs';
+import { ProductsService } from './products.service';
 
 @ApiDocsProductsController()
 @Controller('products')

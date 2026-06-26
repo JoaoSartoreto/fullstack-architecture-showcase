@@ -1,6 +1,6 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator';
 import { OrderStatus } from '../enums/order-status.enum';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateOrderStatusDto {
     @ApiProperty({ enum: OrderStatus, description: 'The new status to apply to the order' })

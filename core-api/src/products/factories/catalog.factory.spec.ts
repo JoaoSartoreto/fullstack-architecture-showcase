@@ -1,9 +1,9 @@
 import { EntityManager } from 'typeorm';
-import { CatalogItemCreators } from './catalog.factory';
-import { ItemType } from '../enums/item-type.enum';
+import { CreateCatalogItemDto } from '../dto/create-catalog-item.dto';
 import { PhysicalGoods } from '../entities/physical-goods.entity';
 import { Service } from '../entities/service.entity';
-import { CreateCatalogItemDto } from '../dto/create-catalog-item.dto';
+import { ItemType } from '../enums/item-type.enum';
+import { CatalogItemCreators } from './catalog.factory';
 
 describe('CatalogFactory', () => {
     let entityManager: jest.Mocked<Partial<EntityManager>>;

@@ -1,9 +1,9 @@
 import { SelectQueryBuilder } from 'typeorm';
-import { applyCatalogFilters } from './catalog-query.util';
+import { Order } from '../../common/pagination/enums/order.enum';
 import { CatalogPageOptionsDto } from '../dto/catalog-page-options.dto';
 import { CatalogItem } from '../entities/catalog-item.entity';
 import { ItemType } from '../enums/item-type.enum';
-import { Order } from '../../common/pagination/enums/order.enum';
+import { applyCatalogFilters } from './catalog-query.util';
 
 describe('CatalogQueryUtil', () => {
     let mockQueryBuilder: Partial<SelectQueryBuilder<CatalogItem>>;

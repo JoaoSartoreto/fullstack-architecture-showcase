@@ -1,9 +1,8 @@
-// src/core/outbox/outbox.scheduler.spec.ts
-import { Test, TestingModule } from '@nestjs/testing';
-import { SchedulerRegistry } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
-import { OutboxScheduler } from './outbox.scheduler';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { Test, TestingModule } from '@nestjs/testing';
 import { OutboxProcessor } from './outbox.processor';
+import { OutboxScheduler } from './outbox.scheduler';
 
 // 1. CRITICAL: Mocking variables must be prefixed with 'mock' and declared at the top level
 // This ensures Jest correctly hoists the mock before any module imports it, preventing timer leaks

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource, EntityManager, QueryRunner, SelectQueryBuilder } from 'typeorm';
-import { OutboxRepository } from './outbox.repository';
 import { OutboxEntity } from './entities/outbox.entity';
+import { OutboxRepository } from './outbox.repository';
 
 describe('OutboxRepository', () => {
     let repository: OutboxRepository;

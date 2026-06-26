@@ -1,11 +1,10 @@
-// src/core/outbox/outbox.processor.ts
-import { Injectable, Inject, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { OutboxRepository } from './outbox.repository';
-import { RABBITMQ_CLIENT_TOKEN } from '../messaging/messaging.config';
-import { AuditEnvelopeFactory } from '../audit/audit.factory';
-import { lastValueFrom, retry } from 'rxjs';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom, retry } from 'rxjs';
+import { AuditEnvelopeFactory } from '../audit/audit.factory';
+import { RABBITMQ_CLIENT_TOKEN } from '../messaging/messaging.config';
+import { OutboxRepository } from './outbox.repository';
 
 @Injectable()
 export class OutboxProcessor {

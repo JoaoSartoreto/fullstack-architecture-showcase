@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { SeedService } from './seed.service';
-import { UsersService } from '../../../users/users.service';
+import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from '../../../products/products.service';
 import { Role } from '../../../users/enums/role.enum';
+import { UsersService } from '../../../users/users.service';
+import { SeedService } from './seed.service';
 
 describe('SeedService', () => {
     let service: SeedService;

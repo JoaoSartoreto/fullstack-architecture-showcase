@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { OrdersService } from './orders.service';
-import { OrdersController } from './orders.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { OrderEntity } from './entities/order.entity';
+import { ProductsModule } from '../products/products.module';
 import { OrderItemEntity } from './entities/order-item.entity';
 import { OrderMessageEntity } from './entities/order-message.entity';
-import { ProductsModule } from '../products/products.module';
+import { OrderEntity } from './entities/order.entity';
+import { OrdersController } from './orders.controller';
+import { OrdersService } from './orders.service';
 
 @Module({
   imports: [

@@ -1,9 +1,9 @@
 import { SelectQueryBuilder } from 'typeorm';
-import { applyOrderFilters } from './order-query.util';
+import { Order } from '../../common/pagination/enums/order.enum';
 import { OrderPageOptionsDto } from '../dto/order-page-options.dto';
 import { OrderEntity } from '../entities/order.entity';
 import { OrderStatus } from '../enums/order-status.enum';
-import { Order } from '../../common/pagination/enums/order.enum';
+import { applyOrderFilters } from './order-query.util';
 
 describe('OrderQueryUtil', () => {
     let mockQueryBuilder: Partial<SelectQueryBuilder<OrderEntity>>;

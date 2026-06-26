@@ -1,17 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
-import { CatalogItem } from './entities/catalog-item.entity';
-import { CreateCatalogItemDto } from './dto/create-catalog-item.dto';
-import { ItemType } from './enums/item-type.enum';
-import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
-import { CatalogItemCreators } from './factories/catalog.factory';
-import { CatalogValidationUtil } from './utils/catalog-validation.util';
-import { PhysicalGoods } from './entities/physical-goods.entity';
-import { PageDto } from '../common/pagination/dto/page.dto';
 import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
+import { PageDto } from '../common/pagination/dto/page.dto';
 import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
+import { CreateCatalogItemDto } from './dto/create-catalog-item.dto';
+import { UpdateCatalogItemDto } from './dto/update-catalog-item.dto';
+import { CatalogItem } from './entities/catalog-item.entity';
+import { PhysicalGoods } from './entities/physical-goods.entity';
+import { ItemType } from './enums/item-type.enum';
+import { CatalogItemCreators } from './factories/catalog.factory';
 import { applyCatalogFilters } from './utils/catalog-query.util';
+import { CatalogValidationUtil } from './utils/catalog-validation.util';
 
 @Injectable()
 export class ProductsService {

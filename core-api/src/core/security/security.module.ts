@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { throttlerConfig } from './security.config';
 import { globalThrottlerGuardProvider } from './providers/throttler-guard.provider';
+import { throttlerConfig } from './security.config';
 
 @Module({
     imports: [

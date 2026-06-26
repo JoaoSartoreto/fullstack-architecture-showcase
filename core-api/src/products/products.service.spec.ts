@@ -1,12 +1,12 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { ProductsService } from './products.service';
-import { CatalogItem } from './entities/catalog-item.entity';
-import { ItemType } from './enums/item-type.enum';
+import { EntityManager } from 'typeorm';
 import { Order } from '../common/pagination/enums/order.enum';
 import { CatalogPageOptionsDto } from './dto/catalog-page-options.dto';
-import { EntityManager } from 'typeorm';
+import { CatalogItem } from './entities/catalog-item.entity';
+import { ItemType } from './enums/item-type.enum';
+import { ProductsService } from './products.service';
 
 describe('ProductsService', () => {
   let service: ProductsService;

@@ -1,9 +1,8 @@
-// src/core/audit/filters/all-exceptions.filter.spec.ts
 import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Request, Response } from 'express';
-import { AllExceptionsFilter } from './all-exceptions.filter';
 import { AuditService } from '../audit.service';
+import { AllExceptionsFilter } from './all-exceptions.filter';
 
 describe('AllExceptionsFilter', () => {
     let filter: AllExceptionsFilter;

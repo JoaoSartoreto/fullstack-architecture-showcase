@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CatalogValidationUtil } from './catalog-validation.util';
-import { ItemType } from '../enums/item-type.enum';
 import { CatalogItem } from '../entities/catalog-item.entity';
+import { ItemType } from '../enums/item-type.enum';
+import { CatalogValidationUtil } from './catalog-validation.util';
 
 describe('CatalogValidationUtil', () => {
     describe('validateUpdateLogic', () => {
