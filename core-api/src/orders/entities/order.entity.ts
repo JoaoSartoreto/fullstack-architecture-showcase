@@ -20,6 +20,12 @@ export class OrderEntity extends AbstractBaseEntity {
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason: string | null;
 
+  @Column({ name: 'fulfillment_details', type: 'text', nullable: true })
+  fulfillmentDetails: string | null;
+
+  @Column({ name: 'dispatch_notes', type: 'text', nullable: true })
+  dispatchNotes: string | null;
+
   @OneToMany(() => OrderItemEntity, (item) => item.order)
   items: OrderItemEntity[];
 
