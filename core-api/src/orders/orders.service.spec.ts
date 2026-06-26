@@ -555,4 +555,73 @@ describe('OrdersService', () => {
       );
     });
   });
+
+  describe('updateStatus - State Mutations (Fulfillment & Dispatch)', () => {
+    let baseOrder: any;
+
+    beforeEach(() => {
+      baseOrder = {
+        id: 'order-1',
+        userId: 'user-1',
+        status: OrderStatus.IN_NEGOTIATION,
+        fulfillmentDetails: null,
+        dispatchNotes: null,
+        rejectionReason: null,
+        items: []
+      };
+      mockEntityManager.findOne.mockResolvedValue(baseOrder);
+      mockEntityManager.save.mockImplementation(async (entity) => entity);
+      jest.spyOn(mockProductsService, 'incrementStock').mockResolvedValue(undefined);
+      jest.spyOn(mockProductsService, 'decrementStock').mockResolvedValue(undefined);
+    });
+
+    it('should assign fulfillmentDetails when transitioning to APPROVED and completely ignore dispatchNotes', async () => {
+      const updateDto: UpdateOrderStatusDto = {
+        status: OrderStatus.APPROVED,
+        fulfillmentDetails: 'Service scheduled for Friday.',
+        dispatchNotes: 'Should be ignored hacker attempt' // Malicious or mistaken payload
+      };
+
+      const result = await service.updateStatus('order-1', updateDto);
+
+      expect(result.status).toBe(OrderStatus.APPROVED);
+      expect(result.fulfillmentDetails).toBe('Service scheduled for Friday.');
+      expect(result.dispatchNotes).toBeNull(); // Proves the SRP isolation works
+      expect(mockEntityManager.save).toHaveBeenCalledWith(result);
+    });
+
+    it('should assign dispatchNotes when transitioning to PAID and preserve existing fulfillmentDetails', async () => {
+      baseOrder.status = OrderStatus.APPROVED;
+      baseOrder.fulfillmentDetails = 'Original agreement details.'; // Existing data
+
+      const updateDto: UpdateOrderStatusDto = {
+        status: OrderStatus.PAID,
+        dispatchNotes: 'Tracking code: BR123456',
+        fulfillmentDetails: 'Trying to overwrite history' // Malicious or mistaken payload
+      };
+
+      const result = await service.updateStatus('order-1', updateDto);
+
+      expect(result.status).toBe(OrderStatus.PAID);
+      expect(result.dispatchNotes).toBe('Tracking code: BR123456');
+      expect(result.fulfillmentDetails).toBe('Original agreement details.'); // Proves history is immutable
+    });
+
+    it('should clear rejectionReason when transitioning OUT of REJECTED (if applicable) and ignore execution notes', async () => {
+      baseOrder.status = OrderStatus.PENDING;
+
+      const updateDto: UpdateOrderStatusDto = {
+        status: OrderStatus.IN_NEGOTIATION,
+        fulfillmentDetails: 'Should be ignored',
+        dispatchNotes: 'Should be ignored'
+      };
+
+      const result = await service.updateStatus('order-1', updateDto);
+
+      expect(result.status).toBe(OrderStatus.IN_NEGOTIATION);
+      expect(result.fulfillmentDetails).toBeNull();
+      expect(result.dispatchNotes).toBeNull();
+      expect(result.rejectionReason).toBeNull();
+    });
+  });
 });

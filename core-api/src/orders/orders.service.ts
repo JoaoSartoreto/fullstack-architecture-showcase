@@ -273,12 +273,30 @@ export class OrdersService {
         }
     }
 
-    // Encapsulates the specific rule of setting or clearing the rejection reason
-    private applyNewStatus(order: OrderEntity, updateDto: UpdateOrderStatusDto): void {
-        order.status = updateDto.status;
-        order.rejectionReason = updateDto.status === OrderStatus.REJECTED
-            ? (updateDto.rejectionReason ?? null)
+    private applyNewStatus(order: OrderEntity, dto: UpdateOrderStatusDto): void {
+        order.status = dto.status;
+
+        this.applyRejectionState(order, dto);
+        this.applyApprovalState(order, dto);
+        this.applyDispatchState(order, dto);
+    }
+
+    private applyRejectionState(order: OrderEntity, { status, rejectionReason }: UpdateOrderStatusDto): void {
+        order.rejectionReason = status === OrderStatus.REJECTED
+            ? (rejectionReason ?? null)
             : null;
+    }
+
+    private applyApprovalState(order: OrderEntity, { status, fulfillmentDetails }: UpdateOrderStatusDto): void {
+        if (status === OrderStatus.APPROVED && fulfillmentDetails !== undefined) {
+            order.fulfillmentDetails = fulfillmentDetails;
+        }
+    }
+
+    private applyDispatchState(order: OrderEntity, { status, dispatchNotes }: UpdateOrderStatusDto): void {
+        if (status === OrderStatus.PAID && dispatchNotes !== undefined) {
+            order.dispatchNotes = dispatchNotes;
+        }
     }
 
     private async freezeOrderPrices(manager: EntityManager, items: OrderItemEntity[]): Promise<void> {
