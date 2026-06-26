@@ -1,7 +1,7 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { OrderEntity } from './order.entity';
-import { CatalogItem } from '../../products/entities/catalog-item.entity';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
+import { CatalogItem } from '../../products/entities/catalog-item.entity';
+import { OrderEntity } from './order.entity';
 
 @Entity('order_items')
 export class OrderItemEntity extends AbstractBaseEntity{

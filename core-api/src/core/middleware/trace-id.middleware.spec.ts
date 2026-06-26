@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { traceIdMiddleware } from './trace-id.middleware';
 import { RequestContext } from '../context/request-context';
+import { traceIdMiddleware } from './trace-id.middleware';
 
 // Mocks the RequestContext to intercept the 'run' method without needing a real AsyncLocalStorage context
 jest.mock('../context/request-context', () => ({

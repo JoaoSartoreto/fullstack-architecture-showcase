@@ -1,6 +1,5 @@
-// src/core/outbox/entities/outbox.entity.ts
-import { Entity, Column, Index } from 'typeorm';
-import { AbstractBaseEntity } from '../../database/entities/base.entity'; 
+import { Column, Entity, Index } from 'typeorm';
+import { AbstractBaseEntity } from '../../database/entities/base.entity';
 
 @Entity('outbox_events')
 export class OutboxEntity extends AbstractBaseEntity {

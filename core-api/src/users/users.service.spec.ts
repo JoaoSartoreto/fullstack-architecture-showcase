@@ -1,15 +1,15 @@
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from './users.service';
-import { UserEntity } from './entities/user.entity';
-import { Role } from './enums/role.enum';
 import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
 import { Order } from '../common/pagination/enums/order.enum';
-import { UserPageOptionsDto } from './dto/user-page-options.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserPageOptionsDto } from './dto/user-page-options.dto';
+import { UserEntity } from './entities/user.entity';
+import { Role } from './enums/role.enum';
+import { UsersService } from './users.service';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),

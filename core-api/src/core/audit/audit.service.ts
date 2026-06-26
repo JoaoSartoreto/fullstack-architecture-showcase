@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Request } from 'express';
 import { RABBITMQ_CLIENT_TOKEN } from '../messaging/messaging.config';

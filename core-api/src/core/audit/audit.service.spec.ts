@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
-import { AuditService } from './audit.service';
-import { RABBITMQ_CLIENT_TOKEN } from '../messaging/messaging.config';
+import { Test, TestingModule } from '@nestjs/testing';
 import { Request } from 'express';
 import { of, throwError } from 'rxjs';
+import { RABBITMQ_CLIENT_TOKEN } from '../messaging/messaging.config';
+import { AuditService } from './audit.service';
 
 describe('AuditService', () => {
     let service: AuditService;

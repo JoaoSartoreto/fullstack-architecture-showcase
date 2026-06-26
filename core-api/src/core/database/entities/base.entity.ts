@@ -1,4 +1,4 @@
-import { PrimaryColumn, BeforeInsert, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { BeforeInsert, CreateDateColumn, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { v7 as uuidv7 } from 'uuid';
 
 export abstract class AbstractBaseEntity {

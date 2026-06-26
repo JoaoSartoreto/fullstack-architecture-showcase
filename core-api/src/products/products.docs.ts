@@ -1,15 +1,15 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiCreatedResponse,
-    ApiOkResponse,
     ApiBadRequestResponse,
+    ApiBearerAuth,
+    ApiCreatedResponse,
     ApiNotFoundResponse,
+    ApiOkResponse,
+    ApiOperation,
     ApiTags
 } from '@nestjs/swagger';
-import { CatalogItemResponseDto } from './dto/catalog-item-response.dto';
 import { ApiPaginatedResponse } from '../common/pagination/decorators/api-paginated-response.decorator';
+import { CatalogItemResponseDto } from './dto/catalog-item-response.dto';
 
 export function ApiDocsProductsController() {
     return applyDecorators(ApiTags('Catalog & Products'));

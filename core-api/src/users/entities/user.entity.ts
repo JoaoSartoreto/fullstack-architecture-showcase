@@ -1,7 +1,7 @@
 import { Exclude } from 'class-transformer';
-import { Role } from '../enums/role.enum';
-import { Entity, Column } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
+import { Role } from '../enums/role.enum';
 
 @Entity('users')
 export class UserEntity extends AbstractBaseEntity {

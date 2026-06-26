@@ -1,6 +1,6 @@
 import { SelectQueryBuilder } from 'typeorm';
-import { OrderEntity } from '../entities/order.entity';
 import { OrderPageOptionsDto } from '../dto/order-page-options.dto';
+import { OrderEntity } from '../entities/order.entity';
 
 /**
  * Mutates the provided QueryBuilder to apply dynamic order filters and pagination constraints.

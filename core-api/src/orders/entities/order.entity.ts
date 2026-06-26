@@ -1,9 +1,9 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 import { UserEntity } from '../../users/entities/user.entity';
 import { OrderStatus } from '../enums/order-status.enum';
 import { OrderItemEntity } from './order-item.entity';
 import { OrderMessageEntity } from './order-message.entity';
-import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
 
 @Entity('orders')
 export class OrderEntity extends AbstractBaseEntity {

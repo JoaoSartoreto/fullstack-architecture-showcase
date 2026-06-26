@@ -1,4 +1,3 @@
-// src/auth/guards/jwt-auth.guard.spec.ts
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';

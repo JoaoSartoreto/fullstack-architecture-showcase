@@ -1,6 +1,6 @@
 import { SelectQueryBuilder } from 'typeorm';
-import { UserEntity } from '../entities/user.entity';
 import { UserPageOptionsDto } from '../dto/user-page-options.dto';
+import { UserEntity } from '../entities/user.entity';
 
 /**
  * Mutates the provided QueryBuilder to apply dynamic user filters and pagination constraints.

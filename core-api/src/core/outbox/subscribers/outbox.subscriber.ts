@@ -1,13 +1,13 @@
 import {
-    EventSubscriber,
     EntitySubscriberInterface,
+    EventSubscriber,
     InsertEvent,
-    UpdateEvent,
     RemoveEvent,
+    UpdateEvent,
 } from 'typeorm';
-import { OutboxEntity } from '../entities/outbox.entity';
-import { RequestContext } from '../../context/request-context';
 import { v7 as uuidv7 } from 'uuid';
+import { RequestContext } from '../../context/request-context';
+import { OutboxEntity } from '../entities/outbox.entity';
 
 @EventSubscriber()
 export class OutboxSubscriber implements EntitySubscriberInterface {

@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from '../users/users.service';
 import { UserEntity } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
+import { AuthValidationUtil } from './utils/auth-validation.util';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +30,8 @@ export class AuthService {
     // 2. Generates the JWT token for the validated user
     async login(email: string, pass: string) {
         const user = await this.validateUser(email, pass);
-        if (!user) throw new UnauthorizedException('Invalid credentials.');
+
+        AuthValidationUtil.validateValidCredentials(user);
 
         const payload = { email: user.email, sub: user.id };
 

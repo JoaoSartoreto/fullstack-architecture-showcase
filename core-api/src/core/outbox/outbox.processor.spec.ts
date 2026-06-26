@@ -1,13 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
-import { EntityManager } from 'typeorm';
+import { Test, TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
-import { OutboxProcessor } from './outbox.processor';
-import { OutboxRepository } from './outbox.repository';
+import { EntityManager } from 'typeorm';
 import { RABBITMQ_CLIENT_TOKEN } from '../messaging/messaging.config';
 import { OutboxEntity } from './entities/outbox.entity';
+import { OutboxProcessor } from './outbox.processor';
+import { OutboxRepository } from './outbox.repository';
 
 describe('OutboxProcessor', () => {
     let processor: OutboxProcessor;

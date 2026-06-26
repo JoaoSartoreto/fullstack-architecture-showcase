@@ -1,6 +1,6 @@
-import { Entity, Column, TableInheritance } from 'typeorm';
-import { ItemType } from '../enums/item-type.enum';
+import { Column, Entity, TableInheritance } from 'typeorm';
 import { AbstractBaseEntity } from '../../core/database/entities/base.entity';
+import { ItemType } from '../enums/item-type.enum';
 
 @Entity('catalog_items')
 @TableInheritance({ column: { type: 'varchar', name: 'type' } })

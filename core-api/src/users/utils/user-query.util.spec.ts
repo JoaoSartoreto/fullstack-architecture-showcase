@@ -1,9 +1,9 @@
 import { SelectQueryBuilder } from 'typeorm';
-import { applyUserFilters } from './user-query.util';
+import { Order } from '../../common/pagination/enums/order.enum';
 import { UserPageOptionsDto } from '../dto/user-page-options.dto';
 import { UserEntity } from '../entities/user.entity';
 import { Role } from '../enums/role.enum';
-import { Order } from '../../common/pagination/enums/order.enum';
+import { applyUserFilters } from './user-query.util';
 
 describe('UserQueryUtil', () => {
     let mockQueryBuilder: Partial<SelectQueryBuilder<UserEntity>>;

@@ -1,15 +1,29 @@
-import { Controller, Post, Body, Get, Patch, Param, ParseUUIDPipe, Delete, Query } from '@nestjs/common';
-import { OrdersService } from './orders.service';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '../users/enums/role.enum';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { UserEntity } from '../users/entities/user.entity';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { CreateOrderMessageDto } from './dto/create-order-message.dto';
-import { ApiDocsApproveNegotiation, ApiDocsCancelOrder, ApiDocsCheckout, ApiDocsCreateCart, ApiDocsFindAllForCustomer, ApiDocsFindAllForStaff, ApiDocsFindOneDetails, ApiDocsFindOrderMessages, ApiDocsOrdersController, ApiDocsRemoveItemFromCart, ApiDocsSendOrderMessage, ApiDocsUpdateNegotiationItems, ApiDocsUpdateStatus } from './orders.docs';
-import { OrderPageOptionsDto } from './dto/order-page-options.dto';
+import { Roles } from '../common/decorators/roles.decorator';
 import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { UserEntity } from '../users/entities/user.entity';
+import { Role } from '../users/enums/role.enum';
+import { CreateOrderMessageDto } from './dto/create-order-message.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderPageOptionsDto } from './dto/order-page-options.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { 
+    ApiDocsApproveNegotiation, 
+    ApiDocsCancelOrder, 
+    ApiDocsCheckout, 
+    ApiDocsCreateCart, 
+    ApiDocsFindAllForCustomer, 
+    ApiDocsFindAllForStaff, 
+    ApiDocsFindOneDetails, 
+    ApiDocsFindOrderMessages, 
+    ApiDocsOrdersController, 
+    ApiDocsRemoveItemFromCart, 
+    ApiDocsSendOrderMessage, 
+    ApiDocsUpdateNegotiationItems, 
+    ApiDocsUpdateStatus 
+} from './orders.docs';
+import { OrdersService } from './orders.service';
 
 @ApiDocsOrdersController()
 @Controller('orders')

@@ -1,8 +1,8 @@
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { setupSwagger } from './core/swagger/swagger.config';
 import { traceIdMiddleware } from './core/middleware/trace-id.middleware';
-import { ConfigService } from '@nestjs/config';
+import { setupSwagger } from './core/swagger/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

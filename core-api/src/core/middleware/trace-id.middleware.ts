@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { v7 as uuidv7 } from 'uuid';
-import { RequestContext, AppRequestContext } from '../context/request-context';
+import { AppRequestContext, RequestContext } from '../context/request-context';
 
 export function traceIdMiddleware(req: Request, res: Response, next: NextFunction) {
     const incomingTraceId = req.headers['x-trace-id'] as string;

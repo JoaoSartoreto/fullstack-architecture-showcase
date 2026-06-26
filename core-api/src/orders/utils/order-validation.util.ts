@@ -1,9 +1,9 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { OrderEntity } from '../entities/order.entity';
 import { CatalogItem } from '../../products/entities/catalog-item.entity';
-import { OrderStatus } from '../enums/order-status.enum';
 import { Role } from '../../users/enums/role.enum';
 import { OrderItemEntity } from '../entities/order-item.entity';
+import { OrderEntity } from '../entities/order.entity';
+import { OrderStatus } from '../enums/order-status.enum';
 
 export const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     [OrderStatus.DRAFT]: [OrderStatus.PENDING],

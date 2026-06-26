@@ -1,23 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { OrderEntity } from './entities/order.entity';
-import { OrderItemEntity } from './entities/order-item.entity';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
+import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { PageDto } from '../common/pagination/dto/page.dto';
 import { CatalogItem } from '../products/entities/catalog-item.entity';
-import { OrderStatus } from './enums/order-status.enum';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { OrderValidationUtil } from './utils/order-validation.util';
 import { ProductsService } from '../products/products.service';
-import { OrderItemProcessor } from './utils/order-item-processor.util';
-import { OrderMessageEntity } from './entities/order-message.entity';
 import { Role } from '../users/enums/role.enum';
 import { CreateOrderMessageDto } from './dto/create-order-message.dto';
-import { applyOrderFilters } from './utils/order-query.util';
+import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderPageOptionsDto } from './dto/order-page-options.dto';
-import { PageMetaDto } from '../common/pagination/dto/page-meta.dto';
-import { PageDto } from '../common/pagination/dto/page.dto';
-import { PageOptionsDto } from '../common/pagination/dto/page-options.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { OrderItemEntity } from './entities/order-item.entity';
+import { OrderMessageEntity } from './entities/order-message.entity';
+import { OrderEntity } from './entities/order.entity';
+import { OrderStatus } from './enums/order-status.enum';
+import { OrderItemProcessor } from './utils/order-item-processor.util';
+import { applyOrderFilters } from './utils/order-query.util';
+import { OrderValidationUtil } from './utils/order-validation.util';
 
 @Injectable()
 export class OrdersService {
