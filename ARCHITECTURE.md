@@ -117,8 +117,23 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 
 ---
 
-## 🚀 Roadmap (What is missing)
+## 🚀 Roadmap (Next Steps & Vision)
 
-### Phase 6: End-to-End & Integration Testing
-- [ ] **E2E Test Harness:** Setup a full containerized integration testing environment utilizing Testcontainers to simulate real HTTP requests and message publishing workflows.
-- [ ] **Idempotent API Contract Testing:** Validate JSON contracts against the Go Microservice and database states under high concurrency simulation.
+### Phase 6: Quality Assurance & Integration (E2E)
+
+* [ ] **E2E Test Harness:** Setup a full containerized integration testing environment utilizing Testcontainers to simulate real HTTP requests, PostgreSQL persistence, and RabbitMQ message publishing workflows.
+* [ ] **Microservices Contract Validation:** Validate JSON contracts and telemetry data flow between the NestJS Core API and the Go Microservice under concurrent simulations to guarantee zero data loss.
+
+### Phase 7: The Client Layer (Frontend)
+
+* [ ] **Modern Web Application:** Build a responsive, strongly-typed SPA (Single Page Application) using **React, Vite, and TypeScript**.
+* [ ] **State Management & Data Fetching:** Implement robust client-side caching and data fetching strategies (e.g., React Query/Zustand) to seamlessly consume the complex generic pagination and dynamic filtering from the backend.
+* [ ] **UX for Business Logic:** Translate the internal state machine (DRAFT -> PENDING -> IN_NEGOTIATION) into an intuitive visual timeline for the Customer and Staff personas.
+
+### Phase 8: Future Architecture Vision (Icebox)
+
+*These features are cataloged for future scalability and product evolution, post-MVP:*
+
+* [ ] **Horizontal Scaling & Load Balancing:** Implement Nginx as a reverse proxy to distribute traffic across multiple containerized Core API replicas.
+* [ ] **Transactional Notifications:** Integrate a local SMTP mock (e.g., Mailpit) to simulate event-driven email dispatches triggered by order state mutations.
+* [ ] **Payment Gateway Sandbox:** Abstract a `PaymentProvider` interface to simulate asynchronous PIX/Credit Card webhook processing.
