@@ -36,6 +36,14 @@ export class OrderValidationUtil {
         }
     }
 
+    static validateStaffStatusTransition(currentStatus: OrderStatus, newStatus: OrderStatus): void {
+        if (currentStatus === OrderStatus.DRAFT) {
+            throw new BadRequestException('Staff members cannot manually transition an order that is still in DRAFT mode.');
+        }
+
+        this.validateStateTransition(currentStatus, newStatus);
+    }
+
     static validateProductEligibility(product: CatalogItem | null, requestedId: string): asserts product is CatalogItem {
         if (!product) {
             throw new NotFoundException(`Product with ID ${requestedId} not found.`);

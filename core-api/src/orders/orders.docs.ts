@@ -69,6 +69,23 @@ export function ApiDocsFindOneDetails() {
     );
 }
 
+export function ApiDocsGetActiveCart() {
+    return applyDecorators(
+        ApiBearerAuth('JWT-auth'),
+        ApiOperation({
+            summary: 'Get current active shopping cart',
+            description: 'Fetches the current customer\'s active order with DRAFT status, including all added items and prices.'
+        }),
+        ApiOkResponse({
+            description: 'Active draft cart retrieved successfully.',
+            type: OrderDetailResponseDto
+        }),
+        ApiNotFoundResponse({
+            description: 'No active draft cart found for the current customer.'
+        })
+    );
+}
+
 export function ApiDocsFindOrderMessages() {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),

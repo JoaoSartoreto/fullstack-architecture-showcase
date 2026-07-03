@@ -165,4 +165,39 @@ describe('OrderValidationUtil', () => {
             expect(() => OrderValidationUtil.validateCanCancelByCustomer(OrderStatus.IN_NEGOTIATION)).not.toThrow();
         });
     });
+
+    describe('validateStaffStatusTransition', () => {
+        it('should throw BadRequestException if current status is DRAFT', () => {
+            // Arrange
+            const currentStatus = OrderStatus.DRAFT;
+            const newStatus = OrderStatus.APPROVED;
+
+            // Act & Assert
+            expect(() => {
+                OrderValidationUtil.validateStaffStatusTransition(currentStatus, newStatus);
+            }).toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if state transition violates the state machine', () => {
+            // Arrange
+            const currentStatus = OrderStatus.PENDING;
+            const newStatus = OrderStatus.DELIVERED; // Illegal skip from PENDING directly to DELIVERED
+
+            // Act & Assert
+            expect(() => {
+                OrderValidationUtil.validateStaffStatusTransition(currentStatus, newStatus);
+            }).toThrow(BadRequestException);
+        });
+
+        it('should execute silently without errors if transition is valid for staff', () => {
+            // Arrange
+            const currentStatus = OrderStatus.PENDING;
+            const newStatus = OrderStatus.APPROVED;
+
+            // Act & Assert
+            expect(() => {
+                OrderValidationUtil.validateStaffStatusTransition(currentStatus, newStatus);
+            }).not.toThrow();
+        });
+    });
 });

@@ -36,6 +36,7 @@ describe('OrdersService', () => {
     transaction: jest.fn().mockImplementation(async (callback) => {
       return callback(mockEntityManager);
     }),
+    getRepository: jest.fn(),
   };
 
   // Double for the standard OrderRepository used in read/update operations
@@ -622,6 +623,100 @@ describe('OrdersService', () => {
       expect(result.fulfillmentDetails).toBeNull();
       expect(result.dispatchNotes).toBeNull();
       expect(result.rejectionReason).toBeNull();
+    });
+  });
+
+  describe('getActiveDraft', () => {
+    it('should return the active draft order if it exists for the given user', async () => {
+      // Arrange
+      const userId = 'customer-uuid-123';
+      const mockDraftOrder = {
+        id: 'order-uuid-456',
+        userId,
+        status: OrderStatus.DRAFT,
+        items: [],
+      };
+
+      const mockRepository = {
+        findOne: jest.fn().mockResolvedValue(mockDraftOrder),
+      };
+      jest.spyOn(mockDataSource, 'getRepository').mockReturnValue(mockRepository as any);
+
+      // Act
+      const result = await service.getActiveDraft(userId);
+
+      // Assert
+      expect(result).toEqual(mockDraftOrder);
+      expect(mockDataSource.getRepository).toHaveBeenCalledWith(OrderEntity);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { userId, status: OrderStatus.DRAFT },
+        relations: { items: true },
+      });
+    });
+
+    it('should return null if no active draft order exists for the given user', async () => {
+      // Arrange
+      const userId = 'customer-uuid-123';
+      const mockRepository = {
+        findOne: jest.fn().mockResolvedValue(null),
+      };
+      jest.spyOn(mockDataSource, 'getRepository').mockReturnValue(mockRepository as any);
+
+      // Act
+      const result = await service.getActiveDraft(userId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('checkout', () => {
+    it('should throw NotFoundException if active draft order is not found (Fail Fast)', async () => {
+      // Arrange
+      const orderId = 'order-uuid-789';
+      const userId = 'customer-uuid-123';
+
+      // Simulate that findOne within the transaction context returns null due to status constraint
+      mockEntityManager.findOne.mockResolvedValue(null);
+
+      jest.spyOn(OrderValidationUtil, 'validateOrderExists').mockImplementation((order, id) => {
+        if (!order) throw new NotFoundException(`Order with ID ${id} not found.`);
+      });
+
+      // Act & Assert
+      await expect(service.checkout(orderId, userId)).rejects.toThrow(NotFoundException);
+      expect(mockEntityManager.findOne).toHaveBeenCalledWith(OrderEntity, {
+        where: { id: orderId, userId, status: OrderStatus.DRAFT },
+        relations: { items: true },
+      });
+    });
+
+    it('should successfully transition status to PENDING and freeze prices if draft is found', async () => {
+      // Arrange
+      const orderId = 'order-uuid-789';
+      const userId = 'customer-uuid-123';
+      const mockDraftOrder = {
+        id: orderId,
+        userId,
+        status: OrderStatus.DRAFT,
+        items: [
+          { id: 'item-uuid-1', quantity: 2, catalogItem: { price: 150 } }
+        ],
+      };
+
+      mockEntityManager.findOne.mockResolvedValue(mockDraftOrder);
+      mockEntityManager.save.mockImplementation(async (entity) => entity);
+
+      // Assuming freezeOrderPrices internally attaches prices or locks metrics
+      // Spying or letting the database execution flow mock natively
+      jest.spyOn(service as any, 'freezeOrderPrices').mockResolvedValue(undefined);
+
+      // Act
+      const result = await service.checkout(orderId, userId);
+
+      // Assert
+      expect(result.status).toBe(OrderStatus.PENDING);
+      expect(mockEntityManager.save).toHaveBeenCalledWith(mockDraftOrder);
     });
   });
 });
