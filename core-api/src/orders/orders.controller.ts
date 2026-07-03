@@ -8,20 +8,21 @@ import { CreateOrderMessageDto } from './dto/create-order-message.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderPageOptionsDto } from './dto/order-page-options.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { 
-    ApiDocsApproveNegotiation, 
-    ApiDocsCancelOrder, 
-    ApiDocsCheckout, 
-    ApiDocsCreateCart, 
-    ApiDocsFindAllForCustomer, 
-    ApiDocsFindAllForStaff, 
-    ApiDocsFindOneDetails, 
-    ApiDocsFindOrderMessages, 
-    ApiDocsOrdersController, 
-    ApiDocsRemoveItemFromCart, 
-    ApiDocsSendOrderMessage, 
-    ApiDocsUpdateNegotiationItems, 
-    ApiDocsUpdateStatus 
+import {
+    ApiDocsApproveNegotiation,
+    ApiDocsCancelOrder,
+    ApiDocsCheckout,
+    ApiDocsCreateCart,
+    ApiDocsFindAllForCustomer,
+    ApiDocsFindAllForStaff,
+    ApiDocsFindOneDetails,
+    ApiDocsFindOrderMessages,
+    ApiDocsGetActiveCart,
+    ApiDocsOrdersController,
+    ApiDocsRemoveItemFromCart,
+    ApiDocsSendOrderMessage,
+    ApiDocsUpdateNegotiationItems,
+    ApiDocsUpdateStatus
 } from './orders.docs';
 import { OrdersService } from './orders.service';
 
@@ -66,6 +67,13 @@ export class OrdersController {
         @Query() pageOptionsDto: OrderPageOptionsDto
     ) {
         return this.ordersService.findAllForCustomer(user.id, pageOptionsDto);
+    }
+
+    @Get('cart')
+    @Roles(Role.CUSTOMER)
+    @ApiDocsGetActiveCart()
+    async getActiveCart(@CurrentUser() user: UserEntity) {
+        return this.ordersService.getActiveDraft(user.id);
     }
 
     @Get(':id')

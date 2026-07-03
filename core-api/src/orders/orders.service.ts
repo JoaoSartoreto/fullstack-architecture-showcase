@@ -59,18 +59,25 @@ export class OrdersService {
     async checkout(orderId: string, userId: string): Promise<OrderEntity> {
         return this.dataSource.transaction(async (manager) => {
             const order = await manager.findOne(OrderEntity, {
-                where: { id: orderId, userId },
+                where: { id: orderId, userId, status: OrderStatus.DRAFT },
                 relations: { items: true },
             });
 
             OrderValidationUtil.validateOrderExists(order, orderId);
-            OrderValidationUtil.validateCartNotEmpty(order.items); // <-- Encapsulated
+            OrderValidationUtil.validateCartNotEmpty(order.items);
             OrderValidationUtil.validateStateTransition(order.status, OrderStatus.PENDING);
 
             await this.freezeOrderPrices(manager, order.items);
 
             order.status = OrderStatus.PENDING;
             return manager.save(order);
+        });
+    }
+
+    async getActiveDraft(userId: string): Promise<OrderEntity | null> {
+        return this.dataSource.getRepository(OrderEntity).findOne({
+            where: { userId, status: OrderStatus.DRAFT },
+            relations: { items: true },
         });
     }
 
@@ -97,7 +104,7 @@ export class OrdersService {
             });
 
             OrderValidationUtil.validateOrderExists(order, orderId);
-            OrderValidationUtil.validateStateTransition(order.status, updateDto.status);
+            OrderValidationUtil.validateStaffStatusTransition(order.status, updateDto.status);
 
             // Isolate and delegate all transition side-effects (e.g., inventory mutations)
             await this.handleTransitionSideEffects(manager, order.items, order.status, updateDto.status);
