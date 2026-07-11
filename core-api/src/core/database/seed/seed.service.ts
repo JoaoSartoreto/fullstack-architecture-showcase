@@ -28,23 +28,23 @@ export class SeedService implements OnApplicationBootstrap {
 
     private async seedUsers() {
         const usersToSeed = [
-            { 
-                fullName: 'Admin Test', 
-                email: 'admin@teste.com', 
-                password: 'teste123', 
-                role: Role.ADMIN 
+            {
+                fullName: 'Admin Test',
+                email: 'admin@teste.com',
+                password: 'teste123',
+                role: Role.ADMIN
             },
-            { 
+            {
                 fullName: 'Staff Test',
-                email: 'staff@teste.com', 
-                password: 'teste123', 
-                role: Role.STAFF 
+                email: 'staff@teste.com',
+                password: 'teste123',
+                role: Role.STAFF
             },
-            { 
-                fullName: 'Custumer Test',
-                email: 'custumer@teste.com', 
-                password: 'teste123', 
-                role: Role.CUSTOMER 
+            {
+                fullName: 'Customer Test',
+                email: 'customer@teste.com',
+                password: 'teste123',
+                role: Role.CUSTOMER
             },
         ];
 
