@@ -35,7 +35,7 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 
 ### 4. Orders Domain (The Core Engine)
 - **State Machine:** Governs the immutable lifecycle of an order: `DRAFT` -> `PENDING` -> `IN_NEGOTIATION` -> `APPROVED` -> `PAID` -> `DELIVERED` (with `REJECTED` branching out to handle cancellations and default scenarios).
-- **Smart Shopping Cart (`DRAFT`):** Customers have full CRUD control over their items. The cart utilizes a "Smart Upsert" mechanism: if a draft already exists, incoming payloads are organically merged using the Diffing Algorithm, preventing orphaned carts.
+- **Smart Shopping Cart (`DRAFT`):** Customers can seamlessly retrieve their active session draft and have full CRUD control over their items. The cart utilizes a "Smart Upsert" mechanism: if a draft already exists, incoming payloads are organically merged using the Diffing Algorithm, preventing orphaned carts.
 - **Checkout Process:** Protected by strict structural guards preventing empty-cart checkouts. It freezes product prices chronologically to guarantee historical financial immutability regardless of future catalog changes.
 - **Domain-Driven Design (DDD):** `OrdersService` acts purely as an orchestrator. 
   - Inventory mutations are strictly delegated to the `ProductsService` via a `SideEffectsHandler` within an ACID Database Transaction to prevent race conditions and overselling.
@@ -69,12 +69,18 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
   - TypeORM Transactional Subscribers, Schedulers, and Context storage blocks.
   - QueryBuilders and pure utility data mutators.
 - **Test Strategy Decoupling:** Purposely separated transport testing from unit metrics by mocking the NestJS underlying dependencies, enforcing rapid, memory-efficient assertions.
+- **Comprehensive End-to-End (E2E) Suite:** Engineered a robust, deterministic integration layer using a dynamic `TestHarness` that provisions an isolated test database. Validates deep architectural constraints and business domain logic, including:
+  - Identity authorization boundaries (RBAC).
+  - Complex State Machine transitions and business rule invariants (e.g., preventing empty cart checkouts).
+  - Asynchronous Transactional Outbox worker flows.
+  - Volumetric Traffic defenses (Throttler).
 
-### 8. API Usability Optimization (Pagination & Dynamic Filtering)
+### 8. API Usability & Security Defenses
 - **Generic Pagination Architecture:** Implemented a highly scalable, mathematically precise pagination structure utilizing `PageOptionsDto`, `PageMetaDto`, and `PageDto<T>`.
 - **Advanced Swagger Generics Integration:** Engineered the `@ApiPaginatedResponse` compound decorator utilizing OpenAPI's `ApiExtraModels` and `$ref` schema paths to statically type nested generic arrays without runtime bloat.
 - **Dynamic Filtering Pipeline (SOLID):** Leveraged DTO Inheritance (e.g., `CatalogPageOptionsDto`) to attach domain-specific search filters. Extracted complex TypeORM `QueryBuilder` dynamic conditional pipelines into pure utility functions (e.g., `applyCatalogFilters`), strictly adhering to SRP (Single Responsibility Principle) and DRY constraints.
 - **Database-Level Defense in Depth:** Enforced strict column projection (e.g., `select: false` for `password_hash`) to prevent memory exposure. Hardcoded core domain security rules directly into the `QueryBuilder` root `.where()` clauses to structurally prevent unauthorized data fetching via query string manipulation.
+- **Layer 7 Rate Limiting:** Integrated the NestJS ThrottlerGuard, configured as a shield against Brute Force and Application-layer DDoS attacks, gracefully degrading abusive traffic into `429 Too Many Requests` responses to protect core database connection pools.
 
 ---
 
@@ -102,6 +108,7 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 ### Orders (State Machine & Chat)
 | Method | Endpoint | Role | Objective |
 | :--- | :--- | :--- | :--- |
+| **GET** | `/orders/cart` | `CUSTOMER` | Retrieves the current active draft (shopping cart). |
 | **POST** | `/orders/cart` | `CUSTOMER` | Creates a cart or smartly appends items into an existing DRAFT. |
 | **DELETE**| `/orders/cart/items/:itemId` | `CUSTOMER` | Removes a specific item from the active cart. |
 | **PATCH** | `/orders/:id/checkout` | `CUSTOMER` | Submits the draft, freezing prices and advancing state. |
@@ -119,18 +126,13 @@ A proof-of-concept enterprise system simulating a highly concurrent B2B/B2G oper
 
 ## 🚀 Roadmap (Next Steps & Vision)
 
-### Phase 6: Quality Assurance & Integration (E2E)
-
-* [ ] **E2E Test Harness:** Setup a full containerized integration testing environment utilizing Testcontainers to simulate real HTTP requests, PostgreSQL persistence, and RabbitMQ message publishing workflows.
-* [ ] **Microservices Contract Validation:** Validate JSON contracts and telemetry data flow between the NestJS Core API and the Go Microservice under concurrent simulations to guarantee zero data loss.
-
-### Phase 7: The Client Layer (Frontend)
+### Phase 6: The Client Layer (Frontend)
 
 * [ ] **Modern Web Application:** Build a responsive, strongly-typed SPA (Single Page Application) using **React, Vite, and TypeScript**.
 * [ ] **State Management & Data Fetching:** Implement robust client-side caching and data fetching strategies (e.g., React Query/Zustand) to seamlessly consume the complex generic pagination and dynamic filtering from the backend.
 * [ ] **UX for Business Logic:** Translate the internal state machine (DRAFT -> PENDING -> IN_NEGOTIATION) into an intuitive visual timeline for the Customer and Staff personas.
 
-### Phase 8: Future Architecture Vision (Icebox)
+### Phase 7: Infrastructure Expansion & Security (Future Vision)
 
 *These features are cataloged for future scalability and product evolution, post-MVP:*
 
