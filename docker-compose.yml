@@ -28,8 +28,15 @@ services:
       POSTGRES_DB: core_db
     ports:
       - "5432:5432"
+    volumes:
+      - core_pg_data:/var/lib/postgresql/data
     networks:
       - poc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_core -d core_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   core-api:
     build:
@@ -38,10 +45,14 @@ services:
       - "3000:3000"
     volumes:
       - ./core-api:/app
+    env_file:
+      - ./core-api/.env
     command: sh -c "npm install && npm run start:dev"
     depends_on:
-      - postgres-core
-      - rabbitmq
+      postgres-core:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - poc-network
 
@@ -56,6 +67,8 @@ services:
       POSTGRES_DB: log_db
     ports:
       - "5433:5432"
+    volumes:
+      - log_pg_data:/var/lib/postgresql/data
     networks:
       - poc-network
     healthcheck:
@@ -88,8 +101,12 @@ services:
       - poc-network
 
 # ==========================================
-# VIRTUAL NETWORK
+# VOLUMES & NETWORKS
 # ==========================================
+volumes:
+  core_pg_data:
+  log_pg_data:
+
 networks:
   poc-network:
     driver: bridge

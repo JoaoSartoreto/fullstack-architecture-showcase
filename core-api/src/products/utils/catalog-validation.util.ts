@@ -5,11 +5,11 @@ import { ItemType } from '../enums/item-type.enum';
 
 export class CatalogValidationUtil {
     static validateUpdateLogic(itemType: string, dto: UpdateCatalogItemDto): void {
-        if (itemType === ItemType.PHYSICAL_GOODS && 'estimatedDurationHours' in dto) {
+        if (itemType === ItemType.PHYSICAL_GOODS && dto.estimatedDurationHours !== undefined) {
             throw new BadRequestException('Cannot assign estimated duration hours to physical goods');
         }
 
-        if (itemType === ItemType.SERVICE && 'stockQuantity' in dto) {
+        if (itemType === ItemType.SERVICE && dto.stockQuantity !== undefined) {
             throw new BadRequestException('Cannot assign stock quantity to a service');
         }
     }
